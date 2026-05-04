@@ -1,0 +1,9 @@
+[package]
+name = "gilt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rustc-hash = "2.1.2"
+tree-sitter = "0.26.8"
+tree-sitter-gilt = { path = "./tree-sitter-gilt" }

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "gilt",
+      "camelcase": "Gilt",
+      "title": "Gilt",
+      "scope": "source.gilt",
+      "file-types": [
+        "gilt"
+      ],
+      "injection-regex": "^gilt$",
+      "class-name": "TreeSitterGilt"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "no",
+    "description": "Safe modding language for Kingdoms Game",
+    "authors": [
+      {
+        "name": "Stargrazer Games"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/luckybelcik/gilt-lang"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}
