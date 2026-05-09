@@ -2,6 +2,10 @@ use crate::semantics::types::GiltType;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticKind {
+    // syntax errors
+    SyntaxError,
+    MissingSemicolon,
+
     // internal errors
     UTF8ConversionFailed,
     MissingFieldNamed(String),
@@ -26,6 +30,8 @@ pub enum DiagnosticKind {
 impl DiagnosticKind {
     pub fn name(&self) -> &'static str {
         match self {
+            Self::SyntaxError => "SyntaxError",
+            Self::MissingSemicolon => "MissingSemicolon",
             Self::UTF8ConversionFailed => "UTF8ConversionFailed",
             Self::MissingFieldNamed(_) => "MissingFieldNamed",
             Self::MissingFieldNumbered(_) => "MissingFieldNumbered",

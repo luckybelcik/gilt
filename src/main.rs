@@ -4,12 +4,14 @@ use std::{
 };
 
 use crate::{
-    ast::lowerer::Lowerer, semantics::analyzer::SemanticAnalyzer, testing::runner::Runner,
+    ast::lowerer::Lowerer, semantics::analyzer::SemanticAnalyzer, syntax_guard::validate_syntax,
+    testing::runner::Runner,
 };
 
 pub mod ast;
 pub mod error_handling;
 pub mod semantics;
+pub mod syntax_guard;
 pub mod testing;
 
 fn main() {
@@ -75,6 +77,16 @@ fn check_file(path: &Path) {
 
     let tree = parser.parse(&source_code, None).expect("Failed to parse");
     let root_node = tree.root_node();
+
+    let maybe_diagnostics = validate_syntax(&root_node);
+
+    if let Err(diagnostics) = maybe_diagnostics
+        && !diagnostics.is_empty()
+    {
+        for diag in diagnostics {
+            println!("Syntax Error: {:?}", diag);
+        }
+    }
 
     let lowerer = Lowerer::new(&source_code);
     let untyped_ast = match lowerer.lower(root_node) {

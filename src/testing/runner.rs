@@ -6,6 +6,7 @@ use crate::{
     ast::{lowerer::Lowerer, statement::Statement},
     error_handling::diagnostic::{Diagnostic, DiagnosticSeverity},
     semantics::{analyzer::SemanticAnalyzer, symbol_table::SymbolTable, types::GiltType},
+    syntax_guard::validate_syntax,
     testing::{subtest_meta::SubtestMetadata, test_expectation::TestExpectation},
 };
 
@@ -13,7 +14,17 @@ pub struct Runner {}
 
 type TypedAST = Vec<Statement<GiltType>>;
 
-fn run_pipeline(source_code: &str) -> Result<(TypedAST, Vec<Diagnostic>, SymbolTable), ()> {
+fn run_pipeline(
+    source_code: &str,
+) -> Result<
+    (
+        Result<(), Vec<Diagnostic>>,
+        TypedAST,
+        Vec<Diagnostic>,
+        SymbolTable,
+    ),
+    (),
+> {
     let mut parser = tree_sitter::Parser::new();
     let language = tree_sitter_gilt::LANGUAGE;
     parser
@@ -22,6 +33,8 @@ fn run_pipeline(source_code: &str) -> Result<(TypedAST, Vec<Diagnostic>, SymbolT
 
     let tree = parser.parse(&source_code, None).expect("Failed to parse");
     let root_node = tree.root_node();
+
+    let maybe_diagnostics = validate_syntax(&root_node);
 
     let lowerer = Lowerer::new(&source_code);
     let untyped_ast = match lowerer.lower(root_node) {
@@ -36,7 +49,12 @@ fn run_pipeline(source_code: &str) -> Result<(TypedAST, Vec<Diagnostic>, SymbolT
 
     let mut analyzer = SemanticAnalyzer::new();
     let (typed_ast, _) = analyzer.analyze(untyped_ast);
-    Ok((typed_ast, analyzer.diagnostics, analyzer.symbols))
+    Ok((
+        maybe_diagnostics,
+        typed_ast,
+        analyzer.diagnostics,
+        analyzer.symbols,
+    ))
 }
 
 fn find_type(symbol_table: &SymbolTable, var_name: &str) -> Option<GiltType> {
@@ -149,7 +167,15 @@ impl Runner {
     }
 
     fn execute_test(&self, test_id: String, metadata: SubtestMetadata, code: String) {
-        let (typed_ast, diagnostics, symbol_table) = run_pipeline(&code).unwrap();
+        let (syntax_diagnostics, _, diagnostics, symbol_table) = run_pipeline(&code).unwrap();
+
+        if let Err(diagnostics) = syntax_diagnostics
+            && !diagnostics.is_empty()
+        {
+            for diag in diagnostics {
+                panic!("Syntax Error: {:?}", diag.kind);
+            }
+        }
 
         if let Some(exp) = metadata.expectation {
             let errors: Vec<_> = diagnostics
@@ -176,10 +202,6 @@ impl Runner {
                 "Variable '{}' not found in AST for test {}",
                 var_name, test_id
             ));
-
-            for statement in &typed_ast {
-                println!("{:?}", statement);
-            }
 
             let actual_type_str = format!("{:?}", actual_type);
             assert_eq!(

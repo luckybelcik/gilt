@@ -4,6 +4,7 @@ use crate::error_handling::diagnostic_kind::DiagnosticKind;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticSeverity {
+    SyntaxError,
     InternalError,
     Error,
     Warning,
@@ -20,6 +21,16 @@ pub struct Diagnostic {
 }
 
 impl Diagnostic {
+    pub fn new_syntax_error(kind: DiagnosticKind, span: Range, loc: u32, file: &str) -> Self {
+        Diagnostic {
+            severity: DiagnosticSeverity::SyntaxError,
+            kind,
+            span,
+            loc,
+            file: file.to_string(),
+        }
+    }
+
     pub fn new_internal_error(kind: DiagnosticKind, span: Range, loc: u32, file: &str) -> Self {
         Diagnostic {
             severity: DiagnosticSeverity::InternalError,
