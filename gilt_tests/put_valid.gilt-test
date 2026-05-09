@@ -42,3 +42,14 @@ const a := {
 const a := {
     put 2 + 2;
 };
+
+//$ ---
+
+//$ CASE: Initialize variable in block then add to variable and put it
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+const a := {
+    var b := 1;
+    b + 1;
+    put b;
+};

@@ -22,7 +22,7 @@ module.exports = grammar({
         $.put_statement,
         $.break_statement,
         $.continue_statement,
-        seq($._expression, ";"),
+        $.expression_statement,
       ),
 
     variable_declaration: ($) =>
@@ -62,6 +62,8 @@ module.exports = grammar({
         $.block,
         seq("(", $._expression, ")"),
       ),
+
+    expression_statement: ($) => seq($._expression, ";"),
 
     binary_expression: ($) =>
       prec.left(

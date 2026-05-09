@@ -1,0 +1,8 @@
+//$ CASE: Expression statement in block returns void
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => void
+const a := {
+    1 + 1;
+};
+
+//$ ---
