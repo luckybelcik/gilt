@@ -291,6 +291,15 @@ impl SemanticAnalyzer {
                         )
                     }
                 }
+
+                // sanity check: don't allow r to be void if we expect anyvalue
+                if expected_type.nonvoid() && r.metadata == GiltType::Void {
+                    self.report_error(
+                        DiagnosticKind::VoidReturnedWhenValueExpected,
+                        expr.range,
+                        line!(),
+                    );
+                }
             }
             ExpressionType::Boolean(bool_) => {
                 r = Expression::new(ExpressionType::Boolean(bool_), expr.range, GiltType::Bool)
@@ -452,8 +461,19 @@ impl SemanticAnalyzer {
                 consequence,
                 alternative,
             } => {
-                let cond_typed =
-                    self.check_expression(condition, &ExpectedType::Specific(&GiltType::Bool));
+                let cond_typed = self.check_expression(condition, &ExpectedType::AnyValue);
+
+                if cond_typed.metadata != GiltType::Bool {
+                    self.report_error(
+                        DiagnosticKind::TypeMismatch {
+                            expected: GiltType::Bool,
+                            found: cond_typed.metadata.clone(),
+                        },
+                        expr.range,
+                        line!(),
+                    );
+                }
+
                 let consequence_typed = self.check_expression(consequence, expected_type);
                 let consequence_type = consequence_typed.metadata.clone();
 
@@ -475,7 +495,7 @@ impl SemanticAnalyzer {
                     None
                 };
 
-                if expected_type.confirmed_nonvoid() && alternative_typed.is_none() {
+                if expected_type.nonvoid() && alternative_typed.is_none() {
                     self.report_error(
                         DiagnosticKind::NonExhaustiveIfExpression,
                         expr.range,

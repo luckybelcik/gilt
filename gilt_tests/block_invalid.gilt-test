@@ -1,5 +1,5 @@
 //$ CASE: Expression statement in block returns void
-//$ EXPECTED_SUCCESS
+//$ EXPECTED_ERROR: VoidReturnedWhenValueExpected
 //$ EXPECTED_TYPE: a => void
 const a := {
     1 + 1;

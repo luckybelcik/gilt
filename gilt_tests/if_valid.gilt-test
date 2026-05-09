@@ -25,3 +25,11 @@ const a: u16 = if true {
     const c: u8 = 1;
     put c;
 };
+
+//$ ---
+
+//$ CASE: If condition can be an expression
+//$ EXPECTED_SUCCESS
+if 2 == 2 {
+    2 + 2;
+};

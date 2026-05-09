@@ -20,7 +20,7 @@ impl<'a> ExpectedType<'a> {
         }
     }
 
-    pub fn confirmed_nonvoid(&self) -> bool {
+    pub fn nonvoid(&self) -> bool {
         match self {
             ExpectedType::Any => false,
             ExpectedType::Specific(_) => true,

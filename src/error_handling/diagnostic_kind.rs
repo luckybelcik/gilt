@@ -23,6 +23,7 @@ pub enum DiagnosticKind {
     NumberOutOfRangeForType(GiltType),
     VariableRedeclaration(String),
     NonExhaustiveIfExpression,
+    VoidReturnedWhenValueExpected,
 
     // warnings
     UnreachableCode,
@@ -48,6 +49,7 @@ impl DiagnosticKind {
             Self::VariableRedeclaration(_) => "VariableRedeclaration",
             Self::NonExhaustiveIfExpression => "NonExhaustiveIfExpression",
             Self::UnreachableCode => "UnreachableCode",
+            Self::VoidReturnedWhenValueExpected => "VoidReturnedWhenValueExpected",
         }
     }
 }

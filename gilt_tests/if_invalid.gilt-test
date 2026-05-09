@@ -31,3 +31,14 @@ const a := if true {
     const b := 1;
     put b;
 };
+
+//$ ---
+
+//$ CASE: If can't return void
+//$ EXPECTED_ERROR x 2: VoidReturnedWhenValueExpected
+//$ EXPECTED_TYPE: a => void
+const a := if true {
+    break;
+} else {
+    break;
+};
