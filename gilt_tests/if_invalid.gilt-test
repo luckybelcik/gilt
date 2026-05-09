@@ -7,11 +7,19 @@ if 1 {
 //$ ---
 
 //$ CASE: Consequence and alternative type mismatch
-//$ EXPECTED_ERROR: TypeMismatch
+//$ EXPECTED_ERROR x 3: TypeMismatch
 if true {
     put 2;
 } else {
     put true;
+};
+
+if true {
+    put 2;
+} else if true {
+    put true;
+} else {
+    put 1.0;
 };
 
 //$ ---
@@ -41,4 +49,16 @@ const a := if true {
     break;
 } else {
     break;
+};
+
+//$ ---
+
+//$ CASE: Invalid else stacking
+//$ EXPECTED_ERROR: SyntaxError
+if true {
+    2 + 2;
+} else {
+    2 + 2;
+} else {
+    2 + 2;
 };

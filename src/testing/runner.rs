@@ -4,7 +4,7 @@ use regex::Regex;
 
 use crate::{
     ast::{lowerer::Lowerer, statement::Statement},
-    error_handling::diagnostic::{Diagnostic, DiagnosticSeverity},
+    error_handling::diagnostic::Diagnostic,
     semantics::{analyzer::SemanticAnalyzer, symbol_table::SymbolTable, types::GiltType},
     syntax_guard::validate_syntax,
     testing::{subtest_meta::SubtestMetadata, test_expectation::TestExpectation},
@@ -181,42 +181,33 @@ impl Runner {
     }
 
     fn execute_test(&self, test_id: String, metadata: SubtestMetadata, code: String) {
-        let (syntax_diagnostics, _, diagnostics, symbol_table) = run_pipeline(&code).unwrap();
+        let (syntax_diagnostics, _, mut diagnostics, symbol_table) = run_pipeline(&code).unwrap();
 
-        if let Err(syntax_diagnostics) = syntax_diagnostics
-            && !syntax_diagnostics.is_empty()
-        {
-            for diag in syntax_diagnostics {
-                panic!("Syntax Error: {:?} in {}", diag.kind, test_id);
-            }
-        }
+        let mut additional_diagnostics = syntax_diagnostics.map_or_else(|v| v, |_| vec![]);
 
-        let errors: Vec<_> = diagnostics
-            .iter()
-            .filter(|d| matches!(d.severity, DiagnosticSeverity::Error))
-            .collect();
+        diagnostics.append(&mut additional_diagnostics);
 
         if let Some(exp) = &metadata.expectation {
             if exp.expects_error {
                 if let Some(expected_name) = &exp.payload {
-                    let matches = errors
+                    let matches = diagnostics
                         .iter()
                         .filter(|d| d.kind.name() == expected_name)
                         .count();
 
                     assert_eq!(
                         matches, exp.count as usize,
-                        "\n[{}] Error mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
+                        "\n[{}] Diagnostic mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
                         test_id, exp.count, expected_name, matches
                     );
                 }
             } else {
-                if !errors.is_empty() {
+                if !diagnostics.is_empty() {
                     panic!(
-                        "\n[{}] No error expected but {} errors present. Errors: {:?}",
+                        "\n[{}] No diagnostic expected but {} diagnostics present. Diagnostics: {:?}",
                         test_id,
-                        errors.len(),
-                        errors
+                        diagnostics.len(),
+                        diagnostics
                     )
                 }
             }
