@@ -26,17 +26,17 @@ if true {
 
 //$ CASE: Non exhaustive if expression
 //$ EXPECTED_ERROR: NonExhaustiveIfExpression
-const a: u8 = if true {
+const a := if true {
     const b := 1;
     put b;
 };
 
 //$ ---
 
-//$ CASE: Non exhaustive if expression inferred type
+//$ CASE: Non exhaustive if expression explicit types
 //$ EXPECTED_ERROR: NonExhaustiveIfExpression
-const a := if true {
-    const b := 1;
+const a: u8 = if true {
+    const b: u8 = 1;
     put b;
 };
 
@@ -61,4 +61,17 @@ if true {
     2 + 2;
 } else {
     2 + 2;
+};
+
+//$ ---
+
+//$ CASE: Nested if with mixed return types
+//$ EXPECTED_ERROR x 2: VoidReturnedWhenValueExpected
+//$ EXPECTED_ERROR: TypeMismatch
+const b := {
+    if true {
+        put 1;
+    } else {
+        break;
+    };
 };

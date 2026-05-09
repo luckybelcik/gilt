@@ -6,6 +6,7 @@ put 1;
 
 //$ CASE: Multiple terminator types in one block
 //$ EXPECTED_ERROR x 2: MixedTerminators
+//$ EXPECTED_ERROR: UnreachableCode
 const a := {
     put 1;
     break;
@@ -15,6 +16,7 @@ const a := {
 
 //$ CASE: Multiple return types in one block
 //$ EXPECTED_ERROR x 2: MultipleTypesReturned
+//$ EXPECTED_ERROR: UnreachableCode
 const a := {
     put 1;
     put true;

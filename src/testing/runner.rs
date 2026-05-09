@@ -109,7 +109,7 @@ impl Runner {
     fn parse_metadata(&self, input: &str) -> SubtestMetadata {
         let mut metadata = SubtestMetadata {
             case: "Unnamed Case".into(),
-            expectation: None,
+            expectations: Vec::new(),
             expected_types: Vec::new(),
             expected_values: Vec::new(),
         };
@@ -149,7 +149,7 @@ impl Runner {
                     false
                 };
 
-                metadata.expectation = Some(TestExpectation {
+                metadata.expectations.push(TestExpectation {
                     count,
                     payload,
                     expects_error,
@@ -187,7 +187,26 @@ impl Runner {
 
         diagnostics.append(&mut additional_diagnostics);
 
-        if let Some(exp) = &metadata.expectation {
+        let errors_expected: &Vec<u32> = &metadata
+            .expectations
+            .iter()
+            // evil bitcasting to use bool as 0 or 1 number
+            .map(|exp| exp.count * exp.expects_error as u32)
+            .collect();
+        let diagnostics_expected: u32 = errors_expected.iter().sum();
+
+        if diagnostics_expected as usize != diagnostics.len() {
+            panic!(
+                "\n[{}] {} diagnostics expected but {} diagnostics present. \nDiagnostics: {:?} \nExpected: {:?}",
+                test_id,
+                diagnostics_expected,
+                diagnostics.len(),
+                diagnostics,
+                metadata.expectations,
+            )
+        }
+
+        for exp in &metadata.expectations {
             if exp.expects_error {
                 if let Some(expected_name) = &exp.payload {
                     let matches = diagnostics
@@ -200,6 +219,7 @@ impl Runner {
                         "\n[{}] Diagnostic mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
                         test_id, exp.count, expected_name, matches
                     );
+                } else {
                 }
             } else {
                 if !diagnostics.is_empty() {
