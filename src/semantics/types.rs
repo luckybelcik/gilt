@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::error_handling::diagnostic_kind::DiagnosticKind;
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum GiltType {
     // ints
     U8,

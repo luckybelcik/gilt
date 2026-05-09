@@ -60,7 +60,7 @@ impl<'a> Lowerer<'a> {
                         is_const,
                         name,
                         type_ann,
-                        value: self.lower_expression(value_node)?,
+                        value: Box::new(self.lower_expression(value_node)?),
                     },
                     node.range(),
                     (),
@@ -74,7 +74,7 @@ impl<'a> Lowerer<'a> {
                 Ok(Statement::new(
                     StatementType::Assignment {
                         name,
-                        value: self.lower_expression(value_node)?,
+                        value: Box::new(self.lower_expression(value_node)?),
                     },
                     node.range(),
                     (),
@@ -83,7 +83,7 @@ impl<'a> Lowerer<'a> {
             "put_statement" => {
                 let value_node = self.child_field(node, "value".to_string(), line!())?;
                 Ok(Statement::new(
-                    StatementType::Put(self.lower_expression(value_node)?),
+                    StatementType::Put(Box::new(self.lower_expression(value_node)?)),
                     node.range(),
                     (),
                 ))
@@ -92,7 +92,7 @@ impl<'a> Lowerer<'a> {
             _ if node.kind() == "expression_statement" || node.is_extra() => {
                 let expr_node = self.child_numerical(node, 0, line!())?;
                 Ok(Statement::new(
-                    StatementType::Expression(self.lower_expression(expr_node)?),
+                    StatementType::Expression(Box::new(self.lower_expression(expr_node)?)),
                     node.range(),
                     (),
                 ))
@@ -195,6 +195,32 @@ impl<'a> Lowerer<'a> {
 
                 Ok(Expression::new(
                     ExpressionType::Block(statements),
+                    node.range(),
+                    (),
+                ))
+            }
+            "if_statement" => {
+                let condition = self.child_field(node, "condition".to_string(), line!())?;
+                let condition = self.lower_expression(condition)?;
+
+                let consequence = self.child_field(node, "consequence".to_string(), line!())?;
+                let consequence = self.lower_expression(consequence)?;
+
+                let alternative = self
+                    .child_field(node, "alternative".to_string(), line!())
+                    .ok();
+                let alternative = if let Some(a) = alternative {
+                    Some(Box::new(self.lower_expression(a)?))
+                } else {
+                    None
+                };
+
+                Ok(Expression::new(
+                    ExpressionType::If {
+                        condition: Box::new(condition),
+                        consequence: Box::new(consequence),
+                        alternative: alternative,
+                    },
                     node.range(),
                     (),
                 ))

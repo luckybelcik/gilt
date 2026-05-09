@@ -15,6 +15,11 @@ pub enum ExpressionType<M> {
     NegativeInteger(i128),
     PositiveInteger(u128),
     Float(f64),
+    If {
+        condition: Box<Expression<M>>,
+        consequence: Box<Expression<M>>,
+        alternative: Option<Box<Expression<M>>>,
+    },
 }
 
 impl<M> ExpressionType<M> {

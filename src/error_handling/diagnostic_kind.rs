@@ -22,6 +22,7 @@ pub enum DiagnosticKind {
     UndefinedIdentifier(String),
     NumberOutOfRangeForType(GiltType),
     VariableRedeclaration(String),
+    NonExhaustiveIfExpression,
 
     // warnings
     UnreachableCode,
@@ -45,6 +46,7 @@ impl DiagnosticKind {
             Self::UndefinedIdentifier(_) => "UndefinedIdentifier",
             Self::NumberOutOfRangeForType(_) => "NumberOutOfRangeForType",
             Self::VariableRedeclaration(_) => "VariableRedeclaration",
+            Self::NonExhaustiveIfExpression => "NonExhaustiveIfExpression",
             Self::UnreachableCode => "UnreachableCode",
         }
     }

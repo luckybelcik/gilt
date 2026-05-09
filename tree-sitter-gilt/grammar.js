@@ -60,6 +60,7 @@ module.exports = grammar({
         $.boolean,
         $.binary_expression,
         $.block,
+        $.if_statement,
         seq("(", $._expression, ")"),
       ),
 
@@ -84,5 +85,15 @@ module.exports = grammar({
     boolean: ($) => choice("true", "false"),
 
     comment: ($) => seq("//", /.*/),
+
+    if_statement: ($) =>
+      seq(
+        "if",
+        field("condition", $._expression),
+        field("consequence", $.block),
+        optional(
+          seq("else", field("alternative", choice($.block, $.if_statement))),
+        ),
+      ),
   },
 });

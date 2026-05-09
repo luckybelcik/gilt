@@ -187,7 +187,7 @@ impl Runner {
             && !syntax_diagnostics.is_empty()
         {
             for diag in syntax_diagnostics {
-                panic!("Syntax Error: {:?}", diag.kind);
+                panic!("Syntax Error: {:?} in {}", diag.kind, test_id);
             }
         }
 
@@ -213,7 +213,8 @@ impl Runner {
             } else {
                 if !errors.is_empty() {
                     panic!(
-                        "No error expected but {} errors present. Errors: {:?}",
+                        "\n[{}] No error expected but {} errors present. Errors: {:?}",
+                        test_id,
                         errors.len(),
                         errors
                     )

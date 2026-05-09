@@ -8,6 +8,7 @@ use crate::{
     },
     error_handling::{diagnostic::Diagnostic, diagnostic_kind::DiagnosticKind},
     semantics::{
+        expected_type::ExpectedType,
         symbol_table::{Symbol, SymbolTable},
         types::GiltType,
     },
@@ -36,7 +37,7 @@ impl SemanticAnalyzer {
     ) -> (Vec<Statement<GiltType>>, &Vec<Diagnostic>) {
         let typed_program: Vec<Statement<GiltType>> = program
             .into_iter()
-            .map(|stmt| self.check_statement(stmt, None))
+            .map(|stmt| self.check_statement(stmt, &ExpectedType::Any))
             .collect();
 
         (typed_program, &self.diagnostics)
@@ -45,7 +46,7 @@ impl SemanticAnalyzer {
     pub fn check_statement(
         &mut self,
         stmt: Statement<()>,
-        expected_type: Option<&GiltType>,
+        expected_type: &ExpectedType,
     ) -> Statement<GiltType> {
         match stmt.kind {
             StatementType::VariableDecl {
@@ -55,12 +56,12 @@ impl SemanticAnalyzer {
                 value,
             } => {
                 let expected_type = if let Some(ex) = &type_ann {
-                    Some(&GiltType::from_string(&ex))
+                    ExpectedType::Specific(&GiltType::from_string(&ex))
                 } else {
-                    None
+                    ExpectedType::AnyValue
                 };
 
-                let expr_typed = self.check_expression(value, expected_type);
+                let expr_typed = self.check_expression(value, &expected_type);
                 let type_ = expr_typed.metadata.clone();
 
                 self.symbols
@@ -100,7 +101,8 @@ impl SemanticAnalyzer {
                     self.report_error(DiagnosticKind::AssigningToConstant, stmt.range, line!());
                 }
 
-                let value_typed = self.check_expression(value, Some(&symbol.symbol_type));
+                let value_typed =
+                    self.check_expression(value, &ExpectedType::Specific(&symbol.symbol_type));
 
                 if !value_typed.metadata.coercable_to(&symbol.symbol_type) {
                     self.report_error(
@@ -128,7 +130,7 @@ impl SemanticAnalyzer {
                 }
 
                 let expr_range = expression.range();
-                let expr_typed = self.check_expression(expression, expected_type);
+                let expr_typed = self.check_expression(expression, &expected_type);
                 let type_ = expr_typed.metadata.clone();
 
                 Statement::new(StatementType::Put(expr_typed), expr_range, type_)
@@ -138,7 +140,7 @@ impl SemanticAnalyzer {
             }
             StatementType::Expression(expression) => {
                 let expr_range = expression.range();
-                let expr_typed = self.check_expression(expression, expected_type);
+                let expr_typed = self.check_expression(expression, &expected_type);
                 let type_ = expr_typed.metadata.clone();
 
                 Statement::new(StatementType::Expression(expr_typed), expr_range, type_)
@@ -148,9 +150,10 @@ impl SemanticAnalyzer {
 
     pub fn check_expression(
         &mut self,
-        expr: Expression<()>,
-        expected_type: Option<&GiltType>,
-    ) -> Expression<GiltType> {
+        expr: Box<Expression<()>>,
+        expected_type: &ExpectedType,
+    ) -> Box<Expression<GiltType>> {
+        let r;
         match expr.expression_type {
             ExpressionType::Binary {
                 left,
@@ -158,14 +161,14 @@ impl SemanticAnalyzer {
                 right,
             } => {
                 let left_expr = if left.expression_type().is_literal() {
-                    self.check_expression(*left, expected_type)
+                    self.check_expression(left, expected_type)
                 } else {
-                    self.check_expression(*left, None)
+                    self.check_expression(left, &ExpectedType::AnyValue)
                 };
                 let right_expr = if right.expression_type().is_literal() {
-                    self.check_expression(*right, expected_type)
+                    self.check_expression(right, expected_type)
                 } else {
-                    self.check_expression(*right, None)
+                    self.check_expression(right, &ExpectedType::AnyValue)
                 };
 
                 let common_t = GiltType::get_common_type(&left_expr.metadata, &right_expr.metadata);
@@ -174,25 +177,25 @@ impl SemanticAnalyzer {
                     Some(t) => {
                         // check if operator is logical or arithmetic
                         if operator.is_comparison() {
-                            Expression::<GiltType>::new(
+                            r = Expression::<GiltType>::new(
                                 ExpressionType::Binary {
-                                    left: Box::new(left_expr),
+                                    left: left_expr,
                                     operator: operator,
-                                    right: Box::new(right_expr),
+                                    right: right_expr,
                                 },
                                 expr.range,
                                 GiltType::Bool,
-                            )
+                            );
                         } else {
-                            Expression::<GiltType>::new(
+                            r = Expression::<GiltType>::new(
                                 ExpressionType::Binary {
-                                    left: Box::new(left_expr),
+                                    left: left_expr,
                                     operator: operator,
-                                    right: Box::new(right_expr),
+                                    right: right_expr,
                                 },
                                 expr.range,
                                 t,
-                            )
+                            );
                         }
                     }
                     None => {
@@ -204,11 +207,11 @@ impl SemanticAnalyzer {
                             expr.range,
                             line!(),
                         );
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::Binary {
-                                left: Box::new(left_expr),
+                                left: left_expr,
                                 operator: operator,
-                                right: Box::new(right_expr),
+                                right: right_expr,
                             },
                             expr.range,
                             GiltType::Unknown,
@@ -250,14 +253,14 @@ impl SemanticAnalyzer {
                 self.block_depth -= 1;
 
                 if seen_return_types.is_empty() {
-                    Expression::new(
+                    r = Expression::new(
                         ExpressionType::Block(typed_statements),
                         expr.range,
                         GiltType::Void,
                     )
                 } else {
                     if seen_return_types.len() <= 1 {
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::Block(typed_statements),
                             expr.range,
                             return_type,
@@ -268,7 +271,7 @@ impl SemanticAnalyzer {
                         for (_, range) in &seen_return_types {
                             self.report_error(DiagnosticKind::MixedTerminators, *range, line!());
                         }
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::Block(typed_statements),
                             expr.range,
                             GiltType::Unknown,
@@ -281,7 +284,7 @@ impl SemanticAnalyzer {
                                 line!(),
                             );
                         }
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::Block(typed_statements),
                             expr.range,
                             GiltType::Unknown,
@@ -290,35 +293,35 @@ impl SemanticAnalyzer {
                 }
             }
             ExpressionType::Boolean(bool_) => {
-                Expression::new(ExpressionType::Boolean(bool_), expr.range, GiltType::Bool)
+                r = Expression::new(ExpressionType::Boolean(bool_), expr.range, GiltType::Bool)
             }
             ExpressionType::Identifier(identifier) => {
                 if let Some(symbol) = self.symbols.resolve(&identifier) {
                     let symbol_type = symbol.symbol_type.clone();
-                    if let Some(expected) = expected_type {
+                    if let ExpectedType::Specific(expected) = expected_type {
                         if symbol_type.coercable_to(expected) {
-                            Expression::new(
+                            r = Expression::new(
                                 ExpressionType::Identifier(identifier),
                                 expr.range,
-                                expected.clone(),
+                                **expected,
                             )
                         } else {
                             self.report_error(
                                 DiagnosticKind::UncoercibleType {
-                                    expected: expected.clone(),
+                                    expected: **expected,
                                     found: symbol_type,
                                 },
                                 expr.range,
                                 line!(),
                             );
-                            Expression::new(
+                            r = Expression::new(
                                 ExpressionType::Identifier(identifier),
                                 expr.range,
                                 GiltType::Unknown,
                             )
                         }
                     } else {
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::Identifier(identifier),
                             expr.range,
                             symbol_type,
@@ -330,7 +333,7 @@ impl SemanticAnalyzer {
                         expr.range,
                         line!(),
                     );
-                    Expression::new(
+                    r = Expression::new(
                         ExpressionType::Identifier(identifier),
                         expr.range,
                         GiltType::Unknown,
@@ -338,30 +341,30 @@ impl SemanticAnalyzer {
                 }
             }
             ExpressionType::NegativeInteger(int) => {
-                if let Some(expected) = expected_type {
+                if let ExpectedType::Specific(expected) = expected_type {
                     if expected.signed_int_fits(int).unwrap_or_else(|err| {
                         self.report_error(err, expr.range, line!());
                         false
                     }) {
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::NegativeInteger(int),
                             expr.range,
-                            expected.clone(),
+                            **expected,
                         )
                     } else {
                         self.report_error(
-                            DiagnosticKind::NumberOutOfRangeForType(expected.clone()),
+                            DiagnosticKind::NumberOutOfRangeForType(**expected),
                             expr.range,
                             line!(),
                         );
-                        Expression::new(
+                        r = Expression::new(
                             ExpressionType::NegativeInteger(int),
                             expr.range,
                             GiltType::Unknown,
                         )
                     }
                 } else {
-                    Expression::new(
+                    r = Expression::new(
                         ExpressionType::NegativeInteger(int),
                         expr.range,
                         GiltType::I32,
@@ -369,24 +372,24 @@ impl SemanticAnalyzer {
                 }
             }
             ExpressionType::PositiveInteger(int) => {
-                if let Some(expected) = expected_type {
+                if let ExpectedType::Specific(expected) = expected_type {
                     if expected.is_unsigned_integer() {
                         if expected.unsigned_int_fits(int).unwrap_or_else(|err| {
                             self.report_error(err, expr.range, line!());
                             false
                         }) {
-                            Expression::new(
+                            r = Expression::new(
                                 ExpressionType::PositiveInteger(int),
                                 expr.range,
-                                expected.clone(),
+                                **expected,
                             )
                         } else {
                             self.report_error(
-                                DiagnosticKind::NumberOutOfRangeForType(expected.clone()),
+                                DiagnosticKind::NumberOutOfRangeForType(**expected),
                                 expr.range,
                                 line!(),
                             );
-                            Expression::new(
+                            r = Expression::new(
                                 ExpressionType::PositiveInteger(int),
                                 expr.range,
                                 GiltType::Unknown,
@@ -397,18 +400,18 @@ impl SemanticAnalyzer {
                             self.report_error(err, expr.range, line!());
                             false
                         }) {
-                            Expression::new(
+                            r = Expression::new(
                                 ExpressionType::PositiveInteger(int),
                                 expr.range,
-                                expected.clone(),
+                                **expected,
                             )
                         } else {
                             self.report_error(
-                                DiagnosticKind::NumberOutOfRangeForType(expected.clone()),
+                                DiagnosticKind::NumberOutOfRangeForType(**expected),
                                 expr.range,
                                 line!(),
                             );
-                            Expression::new(
+                            r = Expression::new(
                                 ExpressionType::PositiveInteger(int),
                                 expr.range,
                                 GiltType::Unknown,
@@ -416,7 +419,7 @@ impl SemanticAnalyzer {
                         }
                     }
                 } else {
-                    Expression::new(
+                    r = Expression::new(
                         ExpressionType::PositiveInteger(int),
                         expr.range,
                         GiltType::U32,
@@ -424,23 +427,75 @@ impl SemanticAnalyzer {
                 }
             }
             ExpressionType::Float(num) => {
-                if let Some(expected) = expected_type {
+                if let ExpectedType::Specific(expected) = expected_type {
                     if expected.is_float() {
-                        Expression::new(ExpressionType::Float(num), expr.range, expected.clone())
+                        r = Expression::new(ExpressionType::Float(num), expr.range, **expected)
                     } else {
                         // internal error because this shouldn't happen
                         self.report_internal_error(
-                            DiagnosticKind::NonFloatNumberInFloatExpression(expected.clone()),
+                            DiagnosticKind::NonFloatNumberInFloatExpression(**expected),
                             expr.range,
                             line!(),
                         );
-                        Expression::new(ExpressionType::Float(num), expr.range, GiltType::Unknown)
+                        r = Expression::new(
+                            ExpressionType::Float(num),
+                            expr.range,
+                            GiltType::Unknown,
+                        )
                     }
                 } else {
-                    Expression::new(ExpressionType::Float(num), expr.range, GiltType::F32)
+                    r = Expression::new(ExpressionType::Float(num), expr.range, GiltType::F32)
                 }
             }
+            ExpressionType::If {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let cond_typed =
+                    self.check_expression(condition, &ExpectedType::Specific(&GiltType::Bool));
+                let consequence_typed = self.check_expression(consequence, expected_type);
+                let consequence_type = consequence_typed.metadata.clone();
+
+                let alternative_typed = if let Some(alt) = alternative {
+                    let alt_typed = self.check_expression(alt, expected_type);
+
+                    if consequence_type != alt_typed.metadata {
+                        self.report_error(
+                            DiagnosticKind::TypeMismatch {
+                                expected: consequence_type.clone(),
+                                found: alt_typed.metadata.clone(),
+                            },
+                            expr.range,
+                            line!(),
+                        );
+                    }
+                    Some(alt_typed)
+                } else {
+                    None
+                };
+
+                if expected_type.confirmed_nonvoid() && alternative_typed.is_none() {
+                    self.report_error(
+                        DiagnosticKind::NonExhaustiveIfExpression,
+                        expr.range,
+                        line!(),
+                    );
+                }
+
+                r = Expression::new(
+                    ExpressionType::If {
+                        condition: cond_typed,
+                        consequence: consequence_typed,
+                        alternative: alternative_typed,
+                    },
+                    expr.range,
+                    consequence_type,
+                );
+            }
         }
+
+        Box::new(r)
     }
 
     fn report_internal_error(&mut self, kind: DiagnosticKind, range: Range, loc: u32) {

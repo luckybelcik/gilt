@@ -1,0 +1,27 @@
+//$ CASE: Regular if
+//$ EXPECTED_SUCCESS
+if true {
+    2 + 2;
+};
+
+//$ ---
+
+//$ CASE: If assigns value to variable
+//$ EXPECTED_SUCCESS
+const a := if true {
+    put 2;
+} else {
+    put 4;
+};
+
+//$ ---
+
+//$ CASE: If assigns value to variable with coerced type
+//$ EXPECTED_SUCCESS
+const a: u16 = if true {
+    const b: u8 = 1;
+    put b;
+} else {
+    const c: u8 = 1;
+    put c;
+};

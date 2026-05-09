@@ -1,0 +1,33 @@
+//$ CASE: If condition non-bool
+//$ EXPECTED_ERROR: TypeMismatch
+if 1 {
+    2 + 2;
+};
+
+//$ ---
+
+//$ CASE: Consequence and alternative type mismatch
+//$ EXPECTED_ERROR: TypeMismatch
+if true {
+    put 2;
+} else {
+    put true;
+};
+
+//$ ---
+
+//$ CASE: Non exhaustive if expression
+//$ EXPECTED_ERROR: NonExhaustiveIfExpression
+const a: u8 = if true {
+    const b := 1;
+    put b;
+};
+
+//$ ---
+
+//$ CASE: Non exhaustive if expression inferred type
+//$ EXPECTED_ERROR: NonExhaustiveIfExpression
+const a := if true {
+    const b := 1;
+    put b;
+};

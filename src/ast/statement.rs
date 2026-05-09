@@ -8,15 +8,15 @@ pub enum StatementType<M> {
         is_const: bool,
         name: String,
         type_ann: Option<String>,
-        value: Expression<M>,
+        value: Box<Expression<M>>,
     },
     Assignment {
         name: String,
-        value: Expression<M>,
+        value: Box<Expression<M>>,
     },
-    Put(Expression<M>),
+    Put(Box<Expression<M>>),
     Break,
-    Expression(Expression<M>),
+    Expression(Box<Expression<M>>),
 }
 
 #[derive(Debug)]
