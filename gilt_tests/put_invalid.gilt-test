@@ -12,3 +12,12 @@ const a := {
 };
 
 //$ ---
+
+//$ CASE: Multiple return types in one block
+//$ EXPECTED_ERROR x 2: MultipleTypesReturned
+const a := {
+    put 1;
+    put true;
+};
+
+//$ ---

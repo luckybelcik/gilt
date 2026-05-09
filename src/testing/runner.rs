@@ -206,7 +206,7 @@ impl Runner {
 
                     assert_eq!(
                         matches, exp.count as usize,
-                        "\n[{}] Error name mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
+                        "\n[{}] Error mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
                         test_id, exp.count, expected_name, matches
                     );
                 }
