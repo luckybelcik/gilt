@@ -1,0 +1,14 @@
+//$ CASE: Scopeless put
+//$ EXPECTED_ERROR: ScopelessPut
+put 1;
+
+//$ ---
+
+//$ CASE: Multiple terminator types in one block
+//$ EXPECTED_ERROR x 2: MixedTerminators
+const a := {
+    put 1;
+    break;
+};
+
+//$ ---

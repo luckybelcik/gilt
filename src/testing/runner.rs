@@ -139,7 +139,21 @@ impl Runner {
 
                 let payload = caps.name("payload").map(|m| m.as_str().trim().to_string());
 
-                metadata.expectation = Some(TestExpectation { count, payload });
+                let type_ = caps.name("type").map(|m| m.as_str().trim().to_string());
+
+                let expects_error = if let Some(t) = type_
+                    && t == "ERROR"
+                {
+                    true
+                } else {
+                    false
+                };
+
+                metadata.expectation = Some(TestExpectation {
+                    count,
+                    payload,
+                    expects_error,
+                });
             } else if let Some(type_map) = cmd.strip_prefix("EXPECTED_TYPE:") {
                 let parts: Vec<&str> = type_map.split("=>").map(|s| s.trim()).collect();
                 if parts.len() == 2 {
@@ -169,31 +183,41 @@ impl Runner {
     fn execute_test(&self, test_id: String, metadata: SubtestMetadata, code: String) {
         let (syntax_diagnostics, _, diagnostics, symbol_table) = run_pipeline(&code).unwrap();
 
-        if let Err(diagnostics) = syntax_diagnostics
-            && !diagnostics.is_empty()
+        if let Err(syntax_diagnostics) = syntax_diagnostics
+            && !syntax_diagnostics.is_empty()
         {
-            for diag in diagnostics {
+            for diag in syntax_diagnostics {
                 panic!("Syntax Error: {:?}", diag.kind);
             }
         }
 
-        if let Some(exp) = metadata.expectation {
-            let errors: Vec<_> = diagnostics
-                .iter()
-                .filter(|d| matches!(d.severity, DiagnosticSeverity::Error))
-                .collect();
+        let errors: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| matches!(d.severity, DiagnosticSeverity::Error))
+            .collect();
 
-            if let Some(expected_name) = exp.payload {
-                let matches = errors
-                    .iter()
-                    .filter(|d| d.kind.name() == expected_name)
-                    .count();
+        if let Some(exp) = &metadata.expectation {
+            if exp.expects_error {
+                if let Some(expected_name) = &exp.payload {
+                    let matches = errors
+                        .iter()
+                        .filter(|d| d.kind.name() == expected_name)
+                        .count();
 
-                assert_eq!(
-                    matches, exp.count as usize,
-                    "\n[{}] Error name mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
-                    test_id, exp.count, expected_name, matches
-                );
+                    assert_eq!(
+                        matches, exp.count as usize,
+                        "\n[{}] Error name mismatch.\nExpected {} instances of: {}\nFound: {} matches.",
+                        test_id, exp.count, expected_name, matches
+                    );
+                }
+            } else {
+                if !errors.is_empty() {
+                    panic!(
+                        "No error expected but {} errors present. Errors: {:?}",
+                        errors.len(),
+                        errors
+                    )
+                }
             }
         }
 
