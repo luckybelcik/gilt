@@ -1,0 +1,44 @@
+//$ CASE: Basic put
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+const a: u32 = {
+    put 1;
+};
+
+//$ ---
+
+//$ CASE: Put forced type from literal (const)
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u8
+const a: u8 = {
+    put 1;
+};
+
+//$ ---
+
+//$ CASE: Put forced type from literal (var)
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u8
+var a: u8 = 0;
+a = {
+    put 1;
+};
+
+//$ ---
+
+//$ CASE: Variable type inferred by type of variable declared in put block
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u8
+const a := {
+    const b: u8 = 1;
+    put b;
+};
+
+//$ ---
+
+//$ CASE: Put block return binary expression
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+const a := {
+    put 2 + 2;
+};

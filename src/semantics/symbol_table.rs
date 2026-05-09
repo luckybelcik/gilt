@@ -1,6 +1,6 @@
 use rustc_hash::FxHashMap;
 
-use crate::semantics::types::GiltType;
+use crate::{error_handling::diagnostic_kind::DiagnosticKind, semantics::types::GiltType};
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
@@ -29,14 +29,11 @@ impl SymbolTable {
         self.scopes.pop();
     }
 
-    pub fn define(&mut self, symbol: Symbol) -> Result<(), String> {
+    pub fn define(&mut self, symbol: Symbol) -> Result<(), DiagnosticKind> {
         // if exists anywhere already, return error (no shadowing)
         for scope in self.scopes.iter().rev() {
             if scope.contains_key(&symbol.name) {
-                return Err(format!(
-                    "Semantic Error: Variable '{}' is already defined in an outer or current scope. Shadowing is not supported.",
-                    symbol.name
-                ));
+                return Err(DiagnosticKind::VariableRedeclaration(symbol.name));
             }
         }
 

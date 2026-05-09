@@ -1,0 +1,86 @@
+//$ CASE: Variable unsigned addition
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => u32
+var a: u32 = 1;
+var b: u32 = 1;
+var c: u32 = a + b;
+
+//$ ---
+
+//$ CASE: Variable signed addition positive
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+var a: i32 = 1;
+var b: i32 = 1;
+var c: i32 = a + b;
+
+//$ ---
+
+//$ CASE: Variable signed addition negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+var a: i32 = -1;
+var b: i32 = -1;
+var c: i32 = a + b;
+
+//$ ---
+
+//$ CASE: Variable unsigned subtraction
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => u32
+var a: u32 = 1;
+var b: u32 = 1;
+var c: u32 = a - b;
+
+//$ ---
+
+//$ CASE: Variable signed subtraction positive
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+var a: i32 = 1;
+var b: i32 = 1;
+var c: i32 = a - b;
+
+//$ ---
+
+//$ CASE: Variable signed subtraction negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+var a: i32 = -1;
+var b: i32 = -1;
+var c: i32 = a - b;
+
+//$ ---
+
+//$ CASE: Variable coercion right to left
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => i32
+var a: i32 = -1;
+var b: u32 = 1;
+var c := a - b;
+
+//$ ---
+
+//$ CASE: Variable coercion left to right
+
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => i32
+var a: i32 = -1;
+var b: u32 = 1;
+var c := b - a;

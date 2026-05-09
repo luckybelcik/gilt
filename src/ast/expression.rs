@@ -2,42 +2,46 @@ use tree_sitter::Range;
 
 use crate::ast::{binary_op::BinaryOp, statement::Statement};
 
-pub enum ExpressionType {
+#[derive(Debug)]
+pub enum ExpressionType<M> {
     Binary {
-        left: Box<Expression>,
+        left: Box<Expression<M>>,
         operator: BinaryOp,
-        right: Box<Expression>,
+        right: Box<Expression<M>>,
     },
-    Block(Vec<Statement>),
+    Block(Vec<Statement<M>>),
     Boolean(bool),
     Identifier(String),
-    SignedInteger(i128),
-    UnsignedInteger(u128),
+    NegativeInteger(i128),
+    PositiveInteger(u128),
     Float(f64),
 }
 
-impl ExpressionType {
+impl<M> ExpressionType<M> {
     pub fn is_literal(&self) -> bool {
         match self {
             ExpressionType::Boolean(_)
-            | ExpressionType::SignedInteger(_)
-            | ExpressionType::UnsignedInteger(_)
+            | ExpressionType::NegativeInteger(_)
+            | ExpressionType::PositiveInteger(_)
             | ExpressionType::Float(_) => true,
             _ => false,
         }
     }
 }
 
-pub struct Expression {
-    expression_type: ExpressionType,
-    range: Range,
+#[derive(Debug)]
+pub struct Expression<M = ()> {
+    pub expression_type: ExpressionType<M>,
+    pub range: Range,
+    pub metadata: M,
 }
 
-impl Expression {
-    pub fn new(expression_type: ExpressionType, range: Range) -> Self {
+impl<M> Expression<M> {
+    pub fn new(expression_type: ExpressionType<M>, range: Range, metadata: M) -> Self {
         Expression {
             expression_type,
             range,
+            metadata,
         }
     }
 
@@ -45,7 +49,7 @@ impl Expression {
         self.range
     }
 
-    pub fn expression_type(&self) -> &ExpressionType {
+    pub fn expression_type(&self) -> &ExpressionType<M> {
         &self.expression_type
     }
 }

@@ -22,7 +22,15 @@
         },
         {
           "type": "SYMBOL",
-          "name": "block"
+          "name": "put_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "break_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "continue_statement"
         },
         {
           "type": "SEQ",
@@ -149,6 +157,53 @@
         }
       ]
     },
+    "put_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "put"
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ";"
+        }
+      ]
+    },
+    "break_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "break"
+        },
+        {
+          "type": "STRING",
+          "value": ";"
+        }
+      ]
+    },
+    "continue_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "continue"
+        },
+        {
+          "type": "STRING",
+          "value": ";"
+        }
+      ]
+    },
     "block": {
       "type": "SEQ",
       "members": [
@@ -178,7 +233,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "number"
+          "name": "integer"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "float"
         },
         {
           "type": "SYMBOL",
@@ -273,9 +332,13 @@
       "type": "PATTERN",
       "value": "[a-z_][a-zA-Z0-9_]*"
     },
-    "number": {
+    "integer": {
       "type": "PATTERN",
-      "value": "\\d+"
+      "value": "[-]?[0-9]+"
+    },
+    "float": {
+      "type": "PATTERN",
+      "value": "\\d+\\.\\d+"
     },
     "boolean": {
       "type": "CHOICE",

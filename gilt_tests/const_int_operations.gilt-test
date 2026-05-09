@@ -1,0 +1,107 @@
+//$ CASE: Const unsigned addition
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => u32
+const a: u32 = 1;
+const b: u32 = 1;
+const c: u32 = a + b;
+
+//$ ---
+
+//$ CASE: Const signed addition positive
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+const a: i32 = 1;
+const b: i32 = 1;
+const c: i32 = a + b;
+
+//$ ---
+
+//$ CASE: Const signed addition negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+const a: i32 = -1;
+const b: i32 = -1;
+const c: i32 = a + b;
+
+//$ ---
+
+//$ CASE: Const unsigned subtraction
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => u32
+const a: u32 = 1;
+const b: u32 = 1;
+const c: u32 = a - b;
+
+//$ ---
+
+//$ CASE: Const signed subtraction positive
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+const a: i32 = 1;
+const b: i32 = 1;
+const c: i32 = a - b;
+
+//$ ---
+
+//$ CASE: Const signed subtraction negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => i32
+//$ EXPECTED_TYPE: c => i32
+const a: i32 = -1;
+const b: i32 = -1;
+const c: i32 = a - b;
+
+//$ ---
+
+//$ CASE: Const coercion right to left
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => i32
+const a: i32 = -1;
+const b: u32 = 1;
+const c := a - b;
+
+//$ ---
+
+//$ CASE: Const coercion left to right
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: b => u32
+//$ EXPECTED_TYPE: c => i32
+const a: i32 = -1;
+const b: u32 = 1;
+const c := b - a;
+
+//$ ---
+
+//$ CASE: Const coercion u8 to u16
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u8
+//$ EXPECTED_TYPE: b => u16
+//$ EXPECTED_TYPE: c => u16
+const a: u8 = 1;
+const b: u16 = 1;
+const c := a + b;
+
+//$ ---
+
+//$ CASE: Const coercion i8 to i16
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i8
+//$ EXPECTED_TYPE: b => i16
+//$ EXPECTED_TYPE: c => i16
+const a: i8 = 1;
+const b: i16 = 1;
+const c := a + b;

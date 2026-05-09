@@ -22,7 +22,6 @@ module.exports = grammar({
         $.put_statement,
         $.break_statement,
         $.continue_statement,
-        $.block,
         seq($._expression, ";"),
       ),
 
@@ -76,7 +75,7 @@ module.exports = grammar({
 
     identifier: ($) => /[a-z_][a-zA-Z0-9_]*/,
 
-    integer: ($) => /\d+/,
+    integer: ($) => /[-]?[0-9]+/,
 
     float: ($) => /\d+\.\d+/,
 

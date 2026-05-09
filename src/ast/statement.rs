@@ -2,29 +2,36 @@ use tree_sitter::Range;
 
 use crate::ast::expression::Expression;
 
-pub enum StatementType {
+#[derive(Debug)]
+pub enum StatementType<M> {
     VariableDecl {
         is_const: bool,
         name: String,
         type_ann: Option<String>,
-        value: Expression,
+        value: Expression<M>,
     },
     Assignment {
         name: String,
-        value: Expression,
+        value: Expression<M>,
     },
-    Put(Expression),
+    Put(Expression<M>),
     Break,
-    Expression(Expression),
+    Expression(Expression<M>),
 }
 
-pub struct Statement {
-    pub kind: StatementType,
+#[derive(Debug)]
+pub struct Statement<M = ()> {
+    pub kind: StatementType<M>,
     pub range: Range,
+    pub metadata: M,
 }
 
-impl Statement {
-    pub fn new(kind: StatementType, range: Range) -> Self {
-        Statement { kind, range }
+impl<M> Statement<M> {
+    pub fn new(kind: StatementType<M>, range: Range, metadata: M) -> Self {
+        Statement {
+            kind,
+            range,
+            metadata,
+        }
     }
 }

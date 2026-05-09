@@ -1,7 +1,9 @@
 use tree_sitter::Range;
 
+use crate::error_handling::diagnostic_kind::DiagnosticKind;
+
 #[derive(Debug, Clone)]
-pub enum DiagnosticKind {
+pub enum DiagnosticSeverity {
     InternalError,
     Error,
     Warning,
@@ -10,41 +12,51 @@ pub enum DiagnosticKind {
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
-    kind: DiagnosticKind,
-    message: String,
-    span: Range,
+    pub severity: DiagnosticSeverity,
+    pub kind: DiagnosticKind,
+    pub span: Range,
+    pub loc: u32,
+    pub file: String,
 }
 
 impl Diagnostic {
-    pub fn new_internal_error(message: &str, span: Range) -> Self {
+    pub fn new_internal_error(kind: DiagnosticKind, span: Range, loc: u32, file: &str) -> Self {
         Diagnostic {
-            kind: DiagnosticKind::InternalError,
-            message: message.to_string(),
+            severity: DiagnosticSeverity::InternalError,
+            kind,
             span,
+            loc,
+            file: file.to_string(),
         }
     }
 
-    pub fn new_error(message: &str, span: Range) -> Self {
+    pub fn new_error(kind: DiagnosticKind, span: Range, loc: u32, file: &str) -> Self {
         Diagnostic {
-            kind: DiagnosticKind::Error,
-            message: message.to_string(),
+            severity: DiagnosticSeverity::Error,
+            kind,
             span,
+            loc,
+            file: file.to_string(),
         }
     }
 
-    pub fn new_warning(message: &str, span: Range) -> Self {
+    pub fn new_warning(kind: DiagnosticKind, span: Range, loc: u32, file: &str) -> Self {
         Diagnostic {
-            kind: DiagnosticKind::Warning,
-            message: message.to_string(),
+            severity: DiagnosticSeverity::Warning,
+            kind,
             span,
+            loc,
+            file: file.to_string(),
         }
     }
 
-    pub fn new_info(message: &str, span: Range) -> Self {
+    pub fn new_info(kind: DiagnosticKind, span: Range, loc: u32, file: &str) -> Self {
         Diagnostic {
-            kind: DiagnosticKind::Info,
-            message: message.to_string(),
+            severity: DiagnosticSeverity::Info,
+            kind,
             span,
+            loc,
+            file: file.to_string(),
         }
     }
 }

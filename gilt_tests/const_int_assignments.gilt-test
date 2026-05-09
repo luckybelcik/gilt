@@ -1,0 +1,85 @@
+//$ CASE: Constant unsigned assignment
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+const a: u32 = 0;
+
+//$ ---
+
+//$ CASE: Constant unsigned assignment inferred type
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+const a := 0;
+
+//$ ---
+
+//$ CASE: Constant signed assignment positive
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+const a: i32 = 1;
+
+//$ ---
+
+//$ CASE: Constant signed assignment negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+const a: i32 = -1;
+
+//$ ---
+
+//$ CASE: Constant signed assignment inferred type negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+const a := -1;
+
+//$ ---
+
+//$ CASE: Constant assignment value smaller than default
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u8
+const a: u8 = 1;
+
+//$ ---
+
+//$ CASE: Const all int types success
+//$ EXPECTED_SUCCESS x 15
+const a: i8 = 127;
+const a_1: i8 = -128;
+const a_2: u8 = 255;
+
+const b: i16 = 32767;
+const b_1: i16 = -32768;
+const b_2: u16 = 65535;
+
+const c: i32 = 2147483647;
+const c_1: i32 = -2147483648;
+const c_2: u32 = 4294967295;
+
+const d: i64 = 9223372036854775807;
+const d_1: i64 = -9223372036854775808;
+const d_2: u64 = 18446744073709551615;
+
+const e: i128 = 170141183460469231731687303715884105727;
+const e_1: i128 = -170141183460469231731687303715884105728;
+const e_2: u128 =  340282366920938463463374607431768211455;
+
+//$ ---
+
+//$ CASE: Const all int types failure
+//$ EXPECTED_ERROR x 12: NumberOutOfRangeForType
+const a: i8 = 128;
+const a_1: i8 = -129;
+const a_2: u8 = 256;
+
+const b: i16 = 32768;
+const b_1: i16 = -32769;
+const b_2: u16 = 65537;
+
+const c: i32 = 2147483648;
+const c_1: i32 = -2147483649;
+const c_2: u32 = 4294967296;
+
+const d: i64 = 9223372036854775808;
+const d_1: i64 = -9223372036854775809;
+const d_2: u64 = 18446744073709551616;
+
+// note: can't do i128 here because it overflows the compiler

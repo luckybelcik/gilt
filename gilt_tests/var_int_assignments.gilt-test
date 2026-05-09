@@ -1,0 +1,85 @@
+//$ CASE: Variable unsigned assignment
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+var a: u32 = 0;
+
+//$ ---
+
+//$ CASE: Variable unsigned assignment inferred type
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u32
+var a := 0;
+
+//$ ---
+
+//$ CASE: Variable signed assignment positive
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+var a: i32 = 1;
+
+//$ ---
+
+//$ CASE: Variable signed assignment negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+var a: i32 = -1;
+
+//$ ---
+
+//$ CASE: Variable signed assignment inferred type negative
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => i32
+var a := -1;
+
+//$ ---
+
+//$ CASE: Variable assignment value smaller than default
+//$ EXPECTED_SUCCESS
+//$ EXPECTED_TYPE: a => u8
+var a: u8 = 1;
+
+//$ ---
+
+//$ CASE: Variable all int types success
+//$ EXPECTED_SUCCESS x 15
+var a: i8 = 127;
+var a_1: i8 = -128;
+var a_2: u8 = 255;
+
+var b: i16 = 32767;
+var b_1: i16 = -32768;
+var b_2: u16 = 65535;
+
+var c: i32 = 2147483647;
+var c_1: i32 = -2147483648;
+var c_2: u32 = 4294967295;
+
+var d: i64 = 9223372036854775807;
+var d_1: i64 = -9223372036854775808;
+var d_2: u64 = 18446744073709551615;
+
+var e: i128 = 170141183460469231731687303715884105727;
+var e_1: i128 = -170141183460469231731687303715884105728;
+var e_2: u128 =  340282366920938463463374607431768211455;
+
+//$ ---
+
+//$ CASE: Variable all int types failure
+//$ EXPECTED_ERROR x 12: NumberOutOfRangeForType
+var a: i8 = 128;
+var a_1: i8 = -129;
+var a_2: u8 = 256;
+
+var b: i16 = 32768;
+var b_1: i16 = -32769;
+var b_2: u16 = 65537;
+
+var c: i32 = 2147483648;
+var c_1: i32 = -2147483649;
+var c_2: u32 = 4294967296;
+
+var d: i64 = 9223372036854775808;
+var d_1: i64 = -9223372036854775809;
+var d_2: u64 = 18446744073709551616;
+
+// note: can't do i128 here because it overflows the compiler
