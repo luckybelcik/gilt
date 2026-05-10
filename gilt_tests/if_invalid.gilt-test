@@ -75,3 +75,21 @@ const b := {
         break;
     };
 };
+
+//$ ---
+
+//$ CASE: If expression as condition of if statement
+//$ EXPECTED_ERROR x 2: ComplicatedIfCondition
+if if true {
+    put true;
+} else {
+    put false;
+} {
+    2 + 2;
+};
+
+if {
+    put true;
+} {
+    2 + 2;
+};

@@ -9,16 +9,22 @@ use crate::{
     error_handling::{diagnostic::Diagnostic, diagnostic_kind::DiagnosticKind},
     semantics::{
         expected_type::ExpectedType,
-        symbol_table::{Symbol, SymbolTable},
+        symbol_table::{FunctionInfo, Symbol, SymbolTable, VariableInfo},
         types::GiltType,
     },
 };
 
+enum SemanticError {
+    NotFound,
+    WrongType,
+}
+
 pub struct SemanticAnalyzer {
     pub symbols: SymbolTable,
     pub diagnostics: Vec<Diagnostic>,
-    loop_depth: usize,
-    block_depth: usize,
+    loop_depth: i32,
+    block_depth: i32,
+    func_depth: i32,
 }
 
 impl SemanticAnalyzer {
@@ -28,6 +34,7 @@ impl SemanticAnalyzer {
             diagnostics: Vec::new(),
             loop_depth: 0,
             block_depth: 0,
+            func_depth: 0,
         }
     }
 
@@ -35,12 +42,46 @@ impl SemanticAnalyzer {
         &mut self,
         program: Vec<Statement<()>>,
     ) -> (Vec<Statement<GiltType>>, &Vec<Diagnostic>) {
+        self.collect_definitions(&program);
+
         let typed_program: Vec<Statement<GiltType>> = program
             .into_iter()
             .map(|stmt| self.check_statement(stmt, &ExpectedType::Any))
             .collect();
 
         (typed_program, &self.diagnostics)
+    }
+
+    pub fn collect_definitions(&mut self, program: &Vec<Statement>) {
+        for stmt in program {
+            if let StatementType::FunctionDefinition {
+                name,
+                parameters,
+                return_type,
+                ..
+            } = &stmt.kind
+            {
+                let param_types = parameters
+                    .iter()
+                    .map(|p| (p.name.clone(), GiltType::from_string(&p.type_ann)))
+                    .collect();
+
+                let ret_ty = return_type
+                    .as_ref()
+                    .map(|rt| GiltType::from_string(rt))
+                    .unwrap_or(GiltType::Void);
+
+                let symbol = Symbol::Function(FunctionInfo {
+                    params: param_types,
+                    return_type: ret_ty,
+                });
+
+                if let Err(err) = self.symbols.define(symbol, name.clone()) {
+                    self.report_error(err, stmt.range, line!());
+                }
+            }
+            // later collect structs or globals here
+        }
     }
 
     pub fn check_statement(
@@ -65,11 +106,13 @@ impl SemanticAnalyzer {
                 let type_ = expr_typed.metadata.clone();
 
                 self.symbols
-                    .define(Symbol {
-                        name: name.clone(),
-                        is_const,
-                        symbol_type: type_,
-                    })
+                    .define(
+                        Symbol::Variable(VariableInfo {
+                            ty: type_,
+                            is_const,
+                        }),
+                        name.clone(),
+                    )
                     .unwrap_or_else(|err| self.report_error(err, stmt.range, line!()));
 
                 Statement::new(
@@ -84,31 +127,41 @@ impl SemanticAnalyzer {
                 )
             }
             StatementType::Assignment { name, value } => {
-                let symbol = self.symbols.resolve(&name).cloned();
+                let var_info = match self.get_variable(&name) {
+                    Ok(info) => info,
+                    Err(e) => {
+                        let kind = match e {
+                            SemanticError::NotFound => {
+                                DiagnosticKind::UndefinedIdentifier(name.clone())
+                            }
+                            SemanticError::WrongType => DiagnosticKind::IncorrectSymbolType,
+                        };
+                        self.report_error(kind, stmt.range, line!());
 
-                if symbol.is_none() {
-                    self.report_error(
-                        DiagnosticKind::UndefinedIdentifier(name.clone()),
-                        stmt.range,
-                        line!(),
-                    );
-                }
+                        // return failure state
+                        return Statement::new(
+                            StatementType::Assignment {
+                                name,
+                                value: self.check_expression(value, &ExpectedType::Any),
+                            },
+                            stmt.range,
+                            GiltType::Unknown,
+                        );
+                    }
+                };
 
-                // we can unwrap the symbol here because we already checked for None above
-                let symbol = symbol.unwrap();
-
-                if symbol.is_const {
+                if var_info.is_const {
                     self.report_error(DiagnosticKind::AssigningToConstant, stmt.range, line!());
                 }
 
                 let value_typed =
-                    self.check_expression(value, &ExpectedType::Specific(&symbol.symbol_type));
+                    self.check_expression(value, &ExpectedType::Specific(&var_info.ty));
 
-                if !value_typed.metadata.coercable_to(&symbol.symbol_type) {
+                if !value_typed.metadata.coercable_to(&var_info.ty) {
                     self.report_error(
                         DiagnosticKind::UncoercibleType {
-                            expected: value_typed.metadata.clone(),
-                            found: symbol.symbol_type,
+                            expected: var_info.ty.clone(),
+                            found: value_typed.metadata.clone(),
                         },
                         stmt.range,
                         line!(),
@@ -126,17 +179,35 @@ impl SemanticAnalyzer {
             }
             StatementType::Put(expression) => {
                 if self.loop_depth == 0 && self.block_depth == 0 {
-                    self.report_error(DiagnosticKind::ScopelessPut, expression.range(), line!());
+                    self.report_error(DiagnosticKind::ScopelessPut, stmt.range, line!());
                 }
 
-                let expr_range = expression.range();
                 let expr_typed = self.check_expression(expression, &expected_type);
                 let type_ = expr_typed.metadata.clone();
 
-                Statement::new(StatementType::Put(expr_typed), expr_range, type_)
+                Statement::new(StatementType::Put(expr_typed), stmt.range, type_)
             }
             StatementType::Break => {
+                if self.loop_depth == 0 && self.block_depth == 0 {
+                    self.report_error(DiagnosticKind::ScopelessBreak, stmt.range, line!());
+                }
+
                 Statement::new(StatementType::Break, stmt.range, GiltType::Void)
+            }
+            StatementType::Return(maybe_expression) => {
+                if self.func_depth == 0 {
+                    self.report_error(DiagnosticKind::ScopelessReturn, stmt.range, line!());
+                }
+
+                let (expr, type_) = if let Some(expr) = maybe_expression {
+                    let expr_typed = self.check_expression(expr, &expected_type);
+                    let type_ = expr_typed.metadata.clone();
+                    (Some(expr_typed), type_)
+                } else {
+                    (None, GiltType::Void)
+                };
+
+                Statement::new(StatementType::Return(expr), stmt.range, type_)
             }
             StatementType::Expression(expression) => {
                 let expr_range = expression.range();
@@ -144,6 +215,87 @@ impl SemanticAnalyzer {
                 let type_ = expr_typed.metadata.clone();
 
                 Statement::new(StatementType::Expression(expr_typed), expr_range, type_)
+            }
+            StatementType::FunctionDefinition {
+                is_public,
+                name,
+                parameters,
+                body,
+                return_type: maybe_return_type,
+            } => {
+                match &body.expression_type {
+                    ExpressionType::Block(_) => {}
+                    _ => {
+                        self.report_error(
+                            DiagnosticKind::FunctionDeclerationMissingCodeBlock,
+                            stmt.range,
+                            line!(),
+                        );
+                    }
+                }
+
+                if self.func_depth > 0 {
+                    self.report_error(DiagnosticKind::NestedFunction, stmt.range, line!());
+                }
+
+                if self.block_depth > 0 || self.loop_depth > 0 {
+                    self.report_error(DiagnosticKind::FunctionNotAtTopScope, stmt.range, line!());
+                }
+
+                self.func_depth += 1;
+                self.symbols.enter_scope();
+
+                for parameter in &parameters {
+                    let parameter_type = GiltType::from_string(&parameter.type_ann);
+
+                    let res = self.symbols.define(
+                        Symbol::Variable(VariableInfo {
+                            ty: parameter_type,
+                            is_const: false,
+                        }),
+                        parameter.name.clone(),
+                    );
+
+                    if let Err(err) = res {
+                        self.report_error(err, stmt.range, line!());
+                    }
+                }
+
+                // we do this so that put statements dont work in functions without a block scope
+                // this is necessary because checking block expressions implicity introduces a block scope
+                self.block_depth -= 1;
+                let body_typed = self.check_expression(body, &expected_type);
+                let type_ = body_typed.metadata.clone();
+                self.block_depth += 1;
+
+                if let Some(return_type) = &maybe_return_type {
+                    let return_type_gilt = GiltType::from_string(return_type);
+                    if type_ != return_type_gilt {
+                        self.report_error(
+                            DiagnosticKind::TypeMismatch {
+                                expected: return_type_gilt,
+                                found: type_,
+                            },
+                            stmt.range,
+                            line!(),
+                        );
+                    }
+                }
+
+                self.func_depth -= 1;
+                self.symbols.exit_scope();
+
+                Statement::new(
+                    StatementType::FunctionDefinition {
+                        is_public,
+                        name,
+                        parameters,
+                        body: body_typed,
+                        return_type: maybe_return_type,
+                    },
+                    stmt.range,
+                    type_,
+                )
             }
         }
     }
@@ -243,6 +395,12 @@ impl SemanticAnalyzer {
                         StatementType::Break => {
                             seen_return_types.insert(GiltType::Void, range);
                         }
+                        StatementType::Return(mayb_expr) => {
+                            if let Some(expr) = mayb_expr {
+                                return_type = expr.metadata.clone();
+                                seen_return_types.insert(return_type.clone(), range);
+                            }
+                        }
                         _ => {}
                     }
 
@@ -305,47 +463,54 @@ impl SemanticAnalyzer {
                 r = Expression::new(ExpressionType::Boolean(bool_), expr.range, GiltType::Bool)
             }
             ExpressionType::Identifier(identifier) => {
-                if let Some(symbol) = self.symbols.resolve(&identifier) {
-                    let symbol_type = symbol.symbol_type.clone();
-                    if let ExpectedType::Specific(expected) = expected_type {
-                        if symbol_type.coercable_to(expected) {
-                            r = Expression::new(
-                                ExpressionType::Identifier(identifier),
-                                expr.range,
-                                **expected,
-                            )
-                        } else {
-                            self.report_error(
-                                DiagnosticKind::UncoercibleType {
-                                    expected: **expected,
-                                    found: symbol_type,
-                                },
-                                expr.range,
-                                line!(),
-                            );
-                            r = Expression::new(
-                                ExpressionType::Identifier(identifier),
-                                expr.range,
-                                GiltType::Unknown,
-                            )
-                        }
-                    } else {
+                let var_info = match self.get_variable(&identifier) {
+                    Ok(info) => info,
+                    Err(e) => {
+                        let kind = match e {
+                            SemanticError::NotFound => {
+                                DiagnosticKind::UndefinedIdentifier(identifier.clone())
+                            }
+                            SemanticError::WrongType => DiagnosticKind::IncorrectSymbolType,
+                        };
+                        self.report_error(kind, expr.range, line!());
+
+                        // return failure state
+                        return Box::new(Expression::new(
+                            ExpressionType::Identifier(identifier),
+                            expr.range,
+                            GiltType::Unknown,
+                        ));
+                    }
+                };
+
+                let symbol_type = var_info.ty.clone();
+                if let ExpectedType::Specific(expected) = expected_type {
+                    if symbol_type.coercable_to(expected) {
                         r = Expression::new(
                             ExpressionType::Identifier(identifier),
                             expr.range,
-                            symbol_type,
+                            **expected,
+                        )
+                    } else {
+                        self.report_error(
+                            DiagnosticKind::UncoercibleType {
+                                expected: **expected,
+                                found: symbol_type,
+                            },
+                            expr.range,
+                            line!(),
+                        );
+                        r = Expression::new(
+                            ExpressionType::Identifier(identifier),
+                            expr.range,
+                            GiltType::Unknown,
                         )
                     }
                 } else {
-                    self.report_error(
-                        DiagnosticKind::UndefinedIdentifier(identifier.clone()),
-                        expr.range,
-                        line!(),
-                    );
                     r = Expression::new(
                         ExpressionType::Identifier(identifier),
                         expr.range,
-                        GiltType::Unknown,
+                        symbol_type,
                     )
                 }
             }
@@ -463,6 +628,23 @@ impl SemanticAnalyzer {
             } => {
                 let cond_typed = self.check_expression(condition, &ExpectedType::AnyValue);
 
+                match &cond_typed.expression_type {
+                    ExpressionType::Block(_)
+                    | ExpressionType::If {
+                        condition: _,
+                        consequence: _,
+                        alternative: _,
+                    } => {
+                        self.report_error(
+                            DiagnosticKind::ComplicatedIfCondition,
+                            expr.range,
+                            line!(),
+                        );
+                    }
+
+                    _ => {}
+                }
+
                 if cond_typed.metadata != GiltType::Bool {
                     self.report_error(
                         DiagnosticKind::TypeMismatch {
@@ -531,5 +713,21 @@ impl SemanticAnalyzer {
     fn report_warning(&mut self, kind: DiagnosticKind, range: Range, loc: u32) {
         self.diagnostics
             .push(Diagnostic::new_warning(kind, range, loc, file!()));
+    }
+
+    fn get_variable(&self, name: &str) -> Result<VariableInfo, SemanticError> {
+        match self.symbols.resolve(name) {
+            Some(Symbol::Variable(v)) => Ok(v.clone()),
+            Some(_) => Err(SemanticError::WrongType),
+            None => Err(SemanticError::NotFound),
+        }
+    }
+
+    fn get_function(&self, name: &str) -> Result<FunctionInfo, SemanticError> {
+        match self.symbols.resolve(name) {
+            Some(Symbol::Function(f)) => Ok(f.clone()),
+            Some(_) => Err(SemanticError::WrongType),
+            None => Err(SemanticError::NotFound),
+        }
     }
 }

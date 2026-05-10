@@ -21,8 +21,10 @@ module.exports = grammar({
         $.assignment,
         $.put_statement,
         $.break_statement,
+        $.return_statement,
         $.continue_statement,
         $.expression_statement,
+        $.function_definition,
       ),
 
     variable_declaration: ($) =>
@@ -47,6 +49,9 @@ module.exports = grammar({
     put_statement: ($) => seq("put", field("value", $._expression), ";"),
 
     break_statement: ($) => seq("break", ";"),
+
+    return_statement: ($) =>
+      seq("return", optional(field("value", $._expression)), ";"),
 
     continue_statement: ($) => seq("continue", ";"),
 
@@ -76,7 +81,7 @@ module.exports = grammar({
         ),
       ),
 
-    identifier: ($) => /[a-z_][a-zA-Z0-9_]*/,
+    identifier: ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
 
     integer: ($) => /[-]?[0-9]+/,
 
@@ -94,6 +99,26 @@ module.exports = grammar({
         optional(
           seq("else", field("alternative", choice($.block, $.if_statement))),
         ),
+      ),
+
+    parameter_list: ($) =>
+      seq(
+        "(",
+        optional(seq($.parameter, optional(seq(",", $.parameter)))),
+        ")",
+      ),
+
+    parameter: ($) =>
+      seq(field("name", $.identifier), ":", field("type", $.identifier)),
+
+    function_definition: ($) =>
+      seq(
+        optional("pub"),
+        "fn",
+        field("name", $.identifier),
+        field("parameters", $.parameter_list),
+        optional(seq("->", field("return_type", $.identifier))),
+        field("body", $.block),
       ),
   },
 });

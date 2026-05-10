@@ -4,7 +4,7 @@ use crate::{
     ast::{
         binary_op::BinaryOp,
         expression::{Expression, ExpressionType},
-        statement::{Statement, StatementType},
+        statement::{Parameter, Statement, StatementType},
     },
     error_handling::{diagnostic::Diagnostic, diagnostic_kind::DiagnosticKind},
 };
@@ -89,10 +89,70 @@ impl<'a> Lowerer<'a> {
                 ))
             }
             "break_statement" => Ok(Statement::new(StatementType::Break, node.range(), ())),
+            "return_statement" => {
+                let value_node = self.child_field(node, "value".to_string(), line!());
+                let value = if let Ok(node) = value_node {
+                    Some(Box::new(self.lower_expression(node)?))
+                } else {
+                    None
+                };
+                Ok(Statement::new(
+                    StatementType::Return(value),
+                    node.range(),
+                    (),
+                ))
+            }
             _ if node.kind() == "expression_statement" || node.is_extra() => {
                 let expr_node = self.child_numerical(node, 0, line!())?;
                 Ok(Statement::new(
                     StatementType::Expression(Box::new(self.lower_expression(expr_node)?)),
+                    node.range(),
+                    (),
+                ))
+            }
+            "function_definition" => {
+                let is_public = self.child_numerical(node, 0, line!());
+                let is_public = is_public.is_ok();
+
+                let name = self.text_of_field(node, "name".to_string(), line!())?;
+
+                let parameter_list = self.child_field(node, "parameters".to_string(), line!())?;
+                let mut parameters = vec![];
+                let mut cursor = parameter_list.walk();
+                for child in parameter_list.children(&mut cursor).filter(|n| {
+                    let text = n.utf8_text(self.source.as_bytes());
+                    if let Ok(t) = text {
+                        match t {
+                            "(" | ")" | "," => false,
+                            _ => true,
+                        }
+                    } else {
+                        false
+                    }
+                }) {
+                    let p = Parameter {
+                        name: self.text_of_field(child, "name".to_string(), line!())?,
+                        type_ann: self.text_of_field(child, "type".to_string(), line!())?,
+                    };
+
+                    parameters.push(p);
+                }
+
+                let body_node = self.child_field(node, "body".to_string(), line!())?;
+                let body = Box::new(self.lower_expression(body_node)?);
+
+                let return_type = self
+                    .text_of_field(node, "return_type".to_string(), line!())
+                    .ok();
+
+                Ok(Statement::new(
+                    StatementType::FunctionDefinition {
+                        is_public,
+                        name,
+                        parameters,
+                        body,
+                        return_type,
+                    },
                     node.range(),
                     (),
                 ))

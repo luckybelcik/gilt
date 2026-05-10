@@ -57,9 +57,9 @@ fn run_pipeline(
     ))
 }
 
-fn find_type(symbol_table: &SymbolTable, var_name: &str) -> Option<GiltType> {
+fn find_variable_type(symbol_table: &SymbolTable, var_name: &str) -> Option<GiltType> {
     let symbol = symbol_table.resolve(var_name);
-    symbol.map(|symbol| symbol.symbol_type.clone())
+    symbol?.as_variable().map(|s| s.ty)
 }
 
 impl Runner {
@@ -190,7 +190,7 @@ impl Runner {
         let errors_expected: &Vec<u32> = &metadata
             .expectations
             .iter()
-            // evil bitcasting to use bool as 0 or 1 number
+            // evil bitcasting to use bool as 0 or 1
             .map(|exp| exp.count * exp.expects_error as u32)
             .collect();
         let diagnostics_expected: u32 = errors_expected.iter().sum();
@@ -234,7 +234,7 @@ impl Runner {
         }
 
         for (var_name, expected_type_str) in metadata.expected_types {
-            let actual_type = find_type(&symbol_table, &var_name).expect(&format!(
+            let actual_type = find_variable_type(&symbol_table, &var_name).expect(&format!(
                 "Variable '{}' not found in AST for test {}",
                 var_name, test_id
             ));

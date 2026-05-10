@@ -1,0 +1,38 @@
+//$ CASE: Return wrong type
+//$ EXPECTED_ERROR: TypeMismatch
+fn add_two(x: i32, y: i32) -> u32 {
+    return x + y;
+}
+
+//$ ---
+
+//$ CASE: Nested functions
+//$ EXPECTED_ERROR: NestedFunction
+fn add_two(x: i32, y: i32) -> i32 {
+    fn add_two_2(z: i32, w: i32) -> i32 {
+        return z + w;
+    }
+    return x + y;
+}
+
+//$ ---
+
+//$ CASE: Function not at top scope
+//$ EXPECTED_ERROR: FunctionNotAtTopScope
+{
+    fn add_two_2(z: i32, w: i32) -> i32 {
+        return z + w;
+    }
+};
+
+//$ ---
+
+//$ CASE: Duplicate function names
+//$ EXPECTED_ERROR: SymbolRedeclaration
+fn add_two(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+fn add_two(x: i32, y: i32) -> i32 {
+    return x + y;
+}

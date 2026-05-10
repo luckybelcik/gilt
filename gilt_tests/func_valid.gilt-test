@@ -1,0 +1,46 @@
+//$ CASE: Basic function
+//$ EXPECTED_SUCCESS
+fn add_two(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+//$ ---
+
+//$ CASE: Basic public function
+//$ EXPECTED_SUCCESS
+pub fn add_two(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+//$ ---
+
+//$ CASE: Parameterless function
+//$ EXPECTED_SUCCESS
+fn void() -> u32 {
+    return 4;
+}
+
+//$ ---
+
+//$ CASE: Returnless function
+//$ EXPECTED_SUCCESS
+fn void() {
+    2 + 2;
+}
+
+//$ ---
+
+//$ CASE: Returnless function 2
+//$ EXPECTED_SUCCESS
+fn void() {
+    return;
+}
+
+//$ ---
+
+//$ CASE: Returnless function 3
+//$ EXPECTED_SUCCESS
+fn void(x: i32) {
+    2 + x;
+    return;
+}

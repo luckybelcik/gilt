@@ -3,10 +3,39 @@ use rustc_hash::FxHashMap;
 use crate::{error_handling::diagnostic_kind::DiagnosticKind, semantics::types::GiltType};
 
 #[derive(Debug, Clone)]
-pub struct Symbol {
-    pub name: String,
+pub struct VariableInfo {
+    pub ty: GiltType,
     pub is_const: bool,
-    pub symbol_type: GiltType,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionInfo {
+    pub params: Vec<(String, GiltType)>,
+    pub return_type: GiltType,
+}
+
+#[derive(Debug, Clone)]
+pub enum Symbol {
+    Variable(VariableInfo),
+    Function(FunctionInfo),
+}
+
+impl Symbol {
+    pub fn as_variable(&self) -> Option<&VariableInfo> {
+        if let Self::Variable(info) = self {
+            Some(info)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_function(&self) -> Option<&FunctionInfo> {
+        if let Self::Function(info) = self {
+            Some(info)
+        } else {
+            None
+        }
+    }
 }
 
 pub struct SymbolTable {
@@ -29,17 +58,19 @@ impl SymbolTable {
         self.scopes.pop();
     }
 
-    pub fn define(&mut self, symbol: Symbol) -> Result<(), DiagnosticKind> {
+    pub fn define(&mut self, symbol: Symbol, name: String) -> Result<(), DiagnosticKind> {
         // if exists anywhere already, return error (no shadowing)
         for scope in self.scopes.iter().rev() {
-            if scope.contains_key(&symbol.name) {
-                return Err(DiagnosticKind::VariableRedeclaration(symbol.name));
+            if scope.contains_key(&name) {
+                return Err(DiagnosticKind::SymbolRedeclaration(name.clone()));
             }
         }
 
-        // otherwise, insert into top scope
+        // otherwise,
+        // insert into top scope
         let current_scope = self.scopes.last_mut().unwrap();
-        current_scope.insert(symbol.name.clone(), symbol);
+        current_scope.insert(name, symbol);
+
         Ok(())
     }
 

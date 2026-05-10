@@ -5,6 +5,7 @@ pub enum DiagnosticKind {
     // syntax errors
     SyntaxError,
     MissingSemicolon,
+    FunctionDeclerationMissingCodeBlock,
 
     // internal errors
     UTF8ConversionFailed,
@@ -17,13 +18,19 @@ pub enum DiagnosticKind {
     UncoercibleType { expected: GiltType, found: GiltType },
     AssigningToConstant,
     ScopelessPut,
+    ScopelessBreak,
+    ScopelessReturn,
     MixedTerminators,
     MultipleTypesReturned,
     UndefinedIdentifier(String),
     NumberOutOfRangeForType(GiltType),
-    VariableRedeclaration(String),
+    SymbolRedeclaration(String),
     NonExhaustiveIfExpression,
     VoidReturnedWhenValueExpected,
+    ComplicatedIfCondition,
+    IncorrectSymbolType,
+    NestedFunction,
+    FunctionNotAtTopScope,
 
     // warnings
     UnreachableCode,
@@ -34,22 +41,32 @@ impl DiagnosticKind {
         match self {
             Self::SyntaxError => "SyntaxError",
             Self::MissingSemicolon => "MissingSemicolon",
+            Self::FunctionDeclerationMissingCodeBlock => "FunctionDefinitionMissingCodeBlock",
+
             Self::UTF8ConversionFailed => "UTF8ConversionFailed",
             Self::MissingFieldNamed(_) => "MissingFieldNamed",
             Self::MissingFieldNumbered(_) => "MissingFieldNumbered",
             Self::NonFloatNumberInFloatExpression(_) => "NonFloatNumberInFloatExpression",
+
             Self::TypeMismatch { .. } => "TypeMismatch",
             Self::UncoercibleType { .. } => "UncoercibleType",
             Self::AssigningToConstant => "AssigningToConstant",
             Self::ScopelessPut => "ScopelessPut",
+            Self::ScopelessBreak => "ScopelessBreak",
+            Self::ScopelessReturn => "ScopelessReturn",
             Self::MixedTerminators => "MixedTerminators",
             Self::MultipleTypesReturned => "MultipleTypesReturned",
             Self::UndefinedIdentifier(_) => "UndefinedIdentifier",
             Self::NumberOutOfRangeForType(_) => "NumberOutOfRangeForType",
-            Self::VariableRedeclaration(_) => "VariableRedeclaration",
+            Self::SymbolRedeclaration(_) => "SymbolRedeclaration",
             Self::NonExhaustiveIfExpression => "NonExhaustiveIfExpression",
-            Self::UnreachableCode => "UnreachableCode",
             Self::VoidReturnedWhenValueExpected => "VoidReturnedWhenValueExpected",
+            Self::ComplicatedIfCondition => "ComplicatedIfCondition",
+            Self::IncorrectSymbolType => "IncorrectSymbolType",
+            Self::NestedFunction => "NestedFunction",
+            Self::FunctionNotAtTopScope => "FunctionNotAtTopScope",
+
+            Self::UnreachableCode => "UnreachableCode",
         }
     }
 }

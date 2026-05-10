@@ -83,3 +83,11 @@ const d_1: i64 = -9223372036854775809;
 const d_2: u64 = 18446744073709551616;
 
 // note: can't do i128 here because it overflows the compiler
+
+//$ ---
+
+//$ CASE: Const shadowing
+//$ EXPECTED_ERROR: SymbolRedeclaration
+
+const a := 1;
+const a := 2;
