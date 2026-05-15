@@ -143,7 +143,6 @@ impl GiltType {
         match &self {
             Self::U8 => match &other {
                 Self::U8
-                | Self::I8
                 | Self::U16
                 | Self::I16
                 | Self::U32
@@ -151,61 +150,49 @@ impl GiltType {
                 | Self::U64
                 | Self::I64
                 | Self::U128
-                | Self::I128
-                | Self::Usize
-                | Self::Isize => true,
+                | Self::I128 => true,
                 _ => false,
             },
             Self::I8 => match &other {
-                Self::I8 | Self::I16 | Self::I32 | Self::I64 | Self::I128 | Self::Isize => true,
+                Self::I8 | Self::I16 | Self::I32 | Self::I64 | Self::I128 => true,
                 _ => false,
             },
             Self::U16 => match &other {
                 Self::U16
-                | Self::I16
                 | Self::U32
                 | Self::I32
                 | Self::U64
                 | Self::I64
                 | Self::U128
-                | Self::I128
-                | Self::Usize
-                | Self::Isize => true,
+                | Self::I128 => true,
                 _ => false,
             },
             Self::I16 => match &other {
-                Self::I16 | Self::I32 | Self::I64 | Self::I128 | Self::Isize => true,
+                Self::I16 | Self::I32 | Self::I64 | Self::I128 => true,
                 _ => false,
             },
             Self::U32 => match &other {
-                Self::U32
-                | Self::I32
-                | Self::U64
-                | Self::I64
-                | Self::U128
-                | Self::I128
-                | Self::Usize
-                | Self::Isize => true,
+                Self::U32 | Self::U64 | Self::I64 | Self::U128 | Self::I128 => true,
                 _ => false,
             },
             Self::I32 => match &other {
-                Self::I32 | Self::I16 | Self::I64 | Self::I128 | Self::Isize => true,
+                Self::I32 | Self::I16 | Self::I64 | Self::I128 => true,
                 _ => false,
             },
             Self::U64 => match &other {
-                Self::U64 | Self::I64 | Self::U128 | Self::I128 | Self::Usize | Self::Isize => true,
+                Self::U64 | Self::U128 | Self::I128 => true,
                 _ => false,
             },
             Self::I64 => match &other {
-                Self::I64 | Self::I32 | Self::I16 | Self::I128 | Self::Isize => true,
+                Self::I64 | Self::I128 => true,
                 _ => false,
             },
             Self::U128 => match &other {
-                Self::U128 | Self::I128 | Self::Usize | Self::Isize => true,
+                Self::U128 => true,
                 _ => false,
             },
             Self::I128 => match &other {
-                Self::I128 | Self::Isize => true,
+                Self::I128 => true,
                 _ => false,
             },
             Self::Usize => match &other {

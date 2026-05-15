@@ -66,10 +66,10 @@ const c: i32 = a - b;
 
 //$ CASE: Const coercion right to left
 //$ EXPECTED_SUCCESS
-//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: a => i64
 //$ EXPECTED_TYPE: b => u32
-//$ EXPECTED_TYPE: c => i32
-const a: i32 = -1;
+//$ EXPECTED_TYPE: c => i64
+const a: i64 = -1;
 const b: u32 = 1;
 const c := a - b;
 
@@ -77,10 +77,10 @@ const c := a - b;
 
 //$ CASE: Const coercion left to right
 //$ EXPECTED_SUCCESS
-//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: a => i64
 //$ EXPECTED_TYPE: b => u32
-//$ EXPECTED_TYPE: c => i32
-const a: i32 = -1;
+//$ EXPECTED_TYPE: c => i64
+const a: i64 = -1;
 const b: u32 = 1;
 const c := b - a;
 

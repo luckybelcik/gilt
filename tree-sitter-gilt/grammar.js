@@ -67,6 +67,7 @@ module.exports = grammar({
         $.block,
         $.if_statement,
         seq("(", $._expression, ")"),
+        $.function_call,
       ),
 
     expression_statement: ($) => seq($._expression, ";"),
@@ -102,11 +103,7 @@ module.exports = grammar({
       ),
 
     parameter_list: ($) =>
-      seq(
-        "(",
-        optional(seq($.parameter, optional(seq(",", $.parameter)))),
-        ")",
-      ),
+      seq("(", optional(seq($.parameter, repeat(seq(",", $.parameter)))), ")"),
 
     parameter: ($) =>
       seq(field("name", $.identifier), ":", field("type", $.identifier)),
@@ -120,5 +117,15 @@ module.exports = grammar({
         optional(seq("->", field("return_type", $.identifier))),
         field("body", $.block),
       ),
+
+    expression_list: ($) =>
+      seq(
+        "(",
+        optional(seq($._expression, repeat(seq(",", $._expression)))),
+        ")",
+      ),
+
+    function_call: ($) =>
+      seq(field("name", $.identifier), field("parameters", $.expression_list)),
   },
 });

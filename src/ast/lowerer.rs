@@ -4,7 +4,7 @@ use crate::{
     ast::{
         binary_op::BinaryOp,
         expression::{Expression, ExpressionType},
-        statement::{Parameter, Statement, StatementType},
+        statement::{DefParameter, Statement, StatementType},
     },
     error_handling::{diagnostic::Diagnostic, diagnostic_kind::DiagnosticKind},
 };
@@ -56,7 +56,7 @@ impl<'a> Lowerer<'a> {
                     .map(|s| s.to_string());
 
                 Ok(Statement::new(
-                    StatementType::VariableDecl {
+                    StatementType::VarDecl {
                         is_const,
                         name,
                         type_ann,
@@ -130,7 +130,7 @@ impl<'a> Lowerer<'a> {
                         false
                     }
                 }) {
-                    let p = Parameter {
+                    let p = DefParameter {
                         name: self.text_of_field(child, "name".to_string(), line!())?,
                         type_ann: self.text_of_field(child, "type".to_string(), line!())?,
                     };
@@ -146,7 +146,7 @@ impl<'a> Lowerer<'a> {
                     .ok();
 
                 Ok(Statement::new(
-                    StatementType::FunctionDefinition {
+                    StatementType::FuncDef {
                         is_public,
                         name,
                         parameters,
@@ -281,6 +281,32 @@ impl<'a> Lowerer<'a> {
                         consequence: Box::new(consequence),
                         alternative: alternative,
                     },
+                    node.range(),
+                    (),
+                ))
+            }
+            "function_call" => {
+                let name = self.text_of_field(node, "name".to_string(), line!())?;
+                let parameter_list = self.child_field(node, "parameters".to_string(), line!())?;
+                let mut arguments = vec![];
+                let mut cursor = parameter_list.walk();
+                for child in parameter_list.children(&mut cursor).filter(|n| {
+                    let text = n.utf8_text(self.source.as_bytes());
+                    if let Ok(t) = text {
+                        match t {
+                            "(" | ")" | "," => false,
+                            _ => true,
+                        }
+                    } else {
+                        false
+                    }
+                }) {
+                    let expr = self.lower_expression(child)?;
+                    arguments.push(expr);
+                }
+
+                Ok(Expression::new(
+                    ExpressionType::FuncCall { name, arguments },
                     node.range(),
                     (),
                 ))

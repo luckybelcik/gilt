@@ -14,6 +14,14 @@ pub fn add_two(x: i32, y: i32) -> i32 {
 
 //$ ---
 
+//$ Case: Basic function 5 parameters
+//$ EXPECTED_SUCCESS
+fn add_five(x: i32, y: i32, z: i32, a: i32, b: i32) -> i32 {
+    return x + y + z + a + b;
+}
+
+//$ ---
+
 //$ CASE: Parameterless function
 //$ EXPECTED_SUCCESS
 fn void() -> u32 {
@@ -40,7 +48,7 @@ fn void() {
 
 //$ CASE: Returnless function 3
 //$ EXPECTED_SUCCESS
-fn void(x: i32) {
+fn void(x: u32) {
     2 + x;
     return;
 }

@@ -54,7 +54,7 @@ impl SemanticAnalyzer {
 
     pub fn collect_definitions(&mut self, program: &Vec<Statement>) {
         for stmt in program {
-            if let StatementType::FunctionDefinition {
+            if let StatementType::FuncDef {
                 name,
                 parameters,
                 return_type,
@@ -90,7 +90,7 @@ impl SemanticAnalyzer {
         expected_type: &ExpectedType,
     ) -> Statement<GiltType> {
         match stmt.kind {
-            StatementType::VariableDecl {
+            StatementType::VarDecl {
                 is_const,
                 name,
                 type_ann,
@@ -116,7 +116,7 @@ impl SemanticAnalyzer {
                     .unwrap_or_else(|err| self.report_error(err, stmt.range, line!()));
 
                 Statement::new(
-                    StatementType::VariableDecl {
+                    StatementType::VarDecl {
                         is_const,
                         name,
                         type_ann,
@@ -216,7 +216,7 @@ impl SemanticAnalyzer {
 
                 Statement::new(StatementType::Expression(expr_typed), expr_range, type_)
             }
-            StatementType::FunctionDefinition {
+            StatementType::FuncDef {
                 is_public,
                 name,
                 parameters,
@@ -286,7 +286,7 @@ impl SemanticAnalyzer {
                 self.symbols.exit_scope();
 
                 Statement::new(
-                    StatementType::FunctionDefinition {
+                    StatementType::FuncDef {
                         is_public,
                         name,
                         parameters,
@@ -694,6 +694,75 @@ impl SemanticAnalyzer {
                     expr.range,
                     consequence_type,
                 );
+            }
+            ExpressionType::FuncCall { name, arguments } => {
+                let func_info = match self.get_function(&name) {
+                    Ok(info) => info,
+                    Err(e) => {
+                        let kind = match e {
+                            SemanticError::NotFound => {
+                                DiagnosticKind::UndefinedIdentifier(name.clone())
+                            }
+                            SemanticError::WrongType => DiagnosticKind::IncorrectSymbolType,
+                        };
+                        self.report_error(kind, expr.range, line!());
+
+                        // return failure state
+                        return Box::new(Expression::new(
+                            ExpressionType::FuncCall {
+                                name,
+                                arguments: vec![],
+                            },
+                            expr.range,
+                            GiltType::Unknown,
+                        ));
+                    }
+                };
+
+                let param_types = func_info
+                    .params
+                    .iter()
+                    .map(|(_, ty)| ty)
+                    .collect::<Vec<&GiltType>>();
+
+                if param_types.len() != arguments.len() {
+                    self.report_error(
+                        DiagnosticKind::IncorrectArgumentCount {
+                            expected: param_types.len(),
+                            found: arguments.len(),
+                        },
+                        expr.range,
+                        line!(),
+                    );
+
+                    return Box::new(Expression::new(
+                        ExpressionType::FuncCall {
+                            name,
+                            arguments: vec![],
+                        },
+                        expr.range,
+                        GiltType::Unknown,
+                    ));
+                }
+
+                let mut typed_arguments = vec![];
+                let mut i = 0;
+                for expr in arguments {
+                    let typed_expr = self
+                        .check_expression(Box::new(expr), &ExpectedType::Specific(param_types[i]));
+
+                    typed_arguments.push(*typed_expr);
+                    i += 1;
+                }
+
+                r = Expression::new(
+                    ExpressionType::FuncCall {
+                        name,
+                        arguments: typed_arguments,
+                    },
+                    expr.range,
+                    func_info.return_type,
+                )
             }
         }
 

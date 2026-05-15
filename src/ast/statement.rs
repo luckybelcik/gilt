@@ -3,14 +3,14 @@ use tree_sitter::Range;
 use crate::ast::expression::Expression;
 
 #[derive(Debug)]
-pub struct Parameter {
+pub struct DefParameter {
     pub name: String,
     pub type_ann: String,
 }
 
 #[derive(Debug)]
 pub enum StatementType<M> {
-    VariableDecl {
+    VarDecl {
         is_const: bool,
         name: String,
         type_ann: Option<String>,
@@ -24,10 +24,10 @@ pub enum StatementType<M> {
     Break,
     Return(Option<Box<Expression<M>>>),
     Expression(Box<Expression<M>>),
-    FunctionDefinition {
+    FuncDef {
         is_public: bool,
         name: String,
-        parameters: Vec<Parameter>,
+        parameters: Vec<DefParameter>,
         body: Box<Expression<M>>,
         return_type: Option<String>,
     },

@@ -66,10 +66,10 @@ var c: i32 = a - b;
 
 //$ CASE: Variable coercion right to left
 //$ EXPECTED_SUCCESS
-//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: a => i64
 //$ EXPECTED_TYPE: b => u32
-//$ EXPECTED_TYPE: c => i32
-var a: i32 = -1;
+//$ EXPECTED_TYPE: c => i64
+var a: i64 = -1;
 var b: u32 = 1;
 var c := a - b;
 
@@ -78,9 +78,9 @@ var c := a - b;
 //$ CASE: Variable coercion left to right
 
 //$ EXPECTED_SUCCESS
-//$ EXPECTED_TYPE: a => i32
+//$ EXPECTED_TYPE: a => i64
 //$ EXPECTED_TYPE: b => u32
-//$ EXPECTED_TYPE: c => i32
-var a: i32 = -1;
+//$ EXPECTED_TYPE: c => i64
+var a: i64 = -1;
 var b: u32 = 1;
 var c := b - a;

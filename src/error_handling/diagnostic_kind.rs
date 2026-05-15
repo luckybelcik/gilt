@@ -31,6 +31,7 @@ pub enum DiagnosticKind {
     IncorrectSymbolType,
     NestedFunction,
     FunctionNotAtTopScope,
+    IncorrectArgumentCount { expected: usize, found: usize },
 
     // warnings
     UnreachableCode,
@@ -65,6 +66,7 @@ impl DiagnosticKind {
             Self::IncorrectSymbolType => "IncorrectSymbolType",
             Self::NestedFunction => "NestedFunction",
             Self::FunctionNotAtTopScope => "FunctionNotAtTopScope",
+            Self::IncorrectArgumentCount { .. } => "IncorrectArgumentCount",
 
             Self::UnreachableCode => "UnreachableCode",
         }

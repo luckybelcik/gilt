@@ -20,6 +20,10 @@ pub enum ExpressionType<M> {
         consequence: Box<Expression<M>>,
         alternative: Option<Box<Expression<M>>>,
     },
+    FuncCall {
+        name: String,
+        arguments: Vec<Expression<M>>,
+    },
 }
 
 impl<M> ExpressionType<M> {
