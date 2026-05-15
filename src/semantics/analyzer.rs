@@ -719,6 +719,30 @@ impl SemanticAnalyzer {
                     }
                 };
 
+                if expected_type.is_specific()
+                    && !func_info
+                        .return_type
+                        .coercable_to(expected_type.as_specific())
+                {
+                    self.report_error(
+                        DiagnosticKind::UncoercibleType {
+                            expected: expected_type.as_specific().clone(),
+                            found: func_info.return_type.clone(),
+                        },
+                        expr.range,
+                        line!(),
+                    );
+
+                    return Box::new(Expression::new(
+                        ExpressionType::FuncCall {
+                            name,
+                            arguments: vec![],
+                        },
+                        expr.range,
+                        GiltType::Unknown,
+                    ));
+                }
+
                 let param_types = func_info
                     .params
                     .iter()

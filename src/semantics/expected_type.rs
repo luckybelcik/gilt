@@ -20,6 +20,14 @@ impl<'a> ExpectedType<'a> {
         }
     }
 
+    pub fn as_specific(&self) -> &GiltType {
+        match self {
+            ExpectedType::Any => panic!("Expected specific type, found any"),
+            ExpectedType::Specific(t) => t,
+            ExpectedType::AnyValue => panic!("Expected specific type, found any value"),
+        }
+    }
+
     pub fn nonvoid(&self) -> bool {
         match self {
             ExpectedType::Any => false,

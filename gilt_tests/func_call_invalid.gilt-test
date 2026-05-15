@@ -22,3 +22,15 @@ fn void() {
     add_two(1);
     add_two(1, 1, 1);
 }
+
+//$ ---
+
+//$ CASE: Expected type and returned type mismatch
+//$ EXPECTED_ERROR: UncoercibleType
+fn return_true() -> bool {
+    return true;
+}
+
+fn void() {
+    const value: u32 = return_true();
+}
