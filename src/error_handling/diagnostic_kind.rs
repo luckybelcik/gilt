@@ -6,6 +6,7 @@ pub enum DiagnosticKind {
     SyntaxError,
     MissingSemicolon,
     FunctionDeclerationMissingCodeBlock,
+    StatementAtTopLevelWhenShouldntBe,
 
     // internal errors
     UTF8ConversionFailed,
@@ -43,6 +44,7 @@ impl DiagnosticKind {
             Self::SyntaxError => "SyntaxError",
             Self::MissingSemicolon => "MissingSemicolon",
             Self::FunctionDeclerationMissingCodeBlock => "FunctionDefinitionMissingCodeBlock",
+            Self::StatementAtTopLevelWhenShouldntBe => "StatementAtTopLevelWhenShouldntBe",
 
             Self::UTF8ConversionFailed => "UTF8ConversionFailed",
             Self::MissingFieldNamed(_) => "MissingFieldNamed",

@@ -24,7 +24,19 @@ impl<'a> Lowerer<'a> {
 
         let mut cursor = root_node.walk();
         for child in root_node.children(&mut cursor) {
-            if !child.is_named() || child.kind() == "comment" {
+            println!("Child kind: {}", child.kind());
+            if !child.is_named() {
+                continue;
+            }
+
+            if child.kind() != "function_definition" {
+                errors.push(Diagnostic::new_internal_error(
+                    DiagnosticKind::StatementAtTopLevelWhenShouldntBe,
+                    child.range(),
+                    line!(),
+                    file!(),
+                ));
+
                 continue;
             }
 
@@ -157,7 +169,11 @@ impl<'a> Lowerer<'a> {
                     (),
                 ))
             }
-            _ => panic!("Unknown statement type: {}", node.kind()),
+            _ => panic!(
+                "Unknown statement type: {} {}",
+                node.kind(),
+                node.utf8_text(self.source.as_bytes()).unwrap()
+            ),
         }
     }
 
@@ -287,7 +303,7 @@ impl<'a> Lowerer<'a> {
             }
             "function_call" => {
                 let name = self.text_of_field(node, "name".to_string(), line!())?;
-                let parameter_list = self.child_field(node, "parameters".to_string(), line!())?;
+                let parameter_list = self.child_field(node, "arguments".to_string(), line!())?;
                 let mut arguments = vec![];
                 let mut cursor = parameter_list.walk();
                 for child in parameter_list.children(&mut cursor).filter(|n| {

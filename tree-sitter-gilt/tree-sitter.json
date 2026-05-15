@@ -6,9 +6,7 @@
       "camelcase": "Gilt",
       "title": "Gilt",
       "scope": "source.gilt",
-      "file-types": [
-        "gilt"
-      ],
+      "file-types": ["gilt"],
       "injection-regex": "^gilt$",
       "class-name": "TreeSitterGilt"
     }

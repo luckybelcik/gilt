@@ -10,12 +10,18 @@
 module.exports = grammar({
   name: "gilt",
 
-  extras: ($) => [/\s/, $.comment],
+  extras: ($) => [
+    /\s/,
+    $.comment,
+    $.tag_comment,
+    $.test_comment,
+    $.test_success_comment,
+    $.test_error_comment,
+    $.test_case_comment,
+  ],
 
   rules: {
-    source_file: ($) => repeat($._top_level_item),
-
-    _top_level_item: ($) => choice($.function_definition),
+    source_file: ($) => repeat($._statement),
 
     _statement: ($) =>
       choice(
@@ -93,6 +99,11 @@ module.exports = grammar({
     boolean: ($) => choice("true", "false"),
 
     comment: ($) => seq("//", /.*/),
+    tag_comment: ($) => prec(1, seq("//#", /.*/)),
+    test_comment: ($) => prec(1, seq("//$", /.*/)),
+    test_success_comment: ($) => prec(2, token("//$ EXPECTED_SUCCESS")),
+    test_error_comment: ($) => prec(2, seq("//$ EXPECTED_ERROR", /.*/)),
+    test_case_comment: ($) => prec(2, seq("//$ CASE:", /.*/)),
 
     if_statement: ($) =>
       seq(
@@ -128,6 +139,6 @@ module.exports = grammar({
       ),
 
     function_call: ($) =>
-      seq(field("name", $.identifier), field("parameters", $.expression_list)),
+      seq(field("name", $.identifier), field("arguments", $.expression_list)),
   },
 });

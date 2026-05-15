@@ -45,7 +45,7 @@ fn main() {
             let test_files = collect_test_files(path);
 
             if test_files.is_empty() {
-                println!("No .gilt-test files found in {}", target_path);
+                println!("No .gilt files found in {}", target_path);
                 return;
             }
 
@@ -123,7 +123,7 @@ fn collect_test_files(dir: &Path) -> Vec<PathBuf> {
 
             if path.is_file() {
                 let filename = path.to_str().unwrap_or("");
-                if filename.ends_with(".gilt-test") {
+                if filename.ends_with(".gilt") {
                     files.push(path);
                 }
             }
