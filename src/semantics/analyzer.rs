@@ -28,9 +28,9 @@ pub struct SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
-    pub fn new() -> Self {
+    pub fn new(save_symbol_history: bool) -> Self {
         Self {
-            symbols: SymbolTable::new(),
+            symbols: SymbolTable::new(save_symbol_history),
             diagnostics: Vec::new(),
             loop_depth: 0,
             block_depth: 0,

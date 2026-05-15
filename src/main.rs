@@ -99,7 +99,7 @@ fn check_file(path: &Path) {
         }
     };
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new(false);
     let (typed_ast, diagnostics) = analyzer.analyze(untyped_ast);
 
     if diagnostics.is_empty() {

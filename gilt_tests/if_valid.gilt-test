@@ -1,3 +1,5 @@
+//# GLOBAL: autofn
+
 //$ CASE: Regular if
 //$ EXPECTED_SUCCESS
 if true {

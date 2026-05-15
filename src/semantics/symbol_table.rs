@@ -41,12 +41,22 @@ impl Symbol {
 pub struct SymbolTable {
     // each entry in the vec is a new scope level
     scopes: Vec<FxHashMap<String, Symbol>>,
+    history: Option<FxHashMap<String, Symbol>>,
 }
 
 impl SymbolTable {
-    pub fn new() -> Self {
-        Self {
-            scopes: vec![FxHashMap::default()],
+    // we only want to save history if we're doing tests to check if the types match what we expected
+    pub fn new(save_history: bool) -> Self {
+        if save_history {
+            Self {
+                scopes: vec![FxHashMap::default()],
+                history: Some(FxHashMap::default()),
+            }
+        } else {
+            Self {
+                scopes: vec![FxHashMap::default()],
+                history: None,
+            }
         }
     }
 
@@ -59,6 +69,11 @@ impl SymbolTable {
     }
 
     pub fn define(&mut self, symbol: Symbol, name: String) -> Result<(), DiagnosticKind> {
+        // if saving history, just replace the current value if it exists
+        self.history.as_mut().map(|history| {
+            history.insert(name.clone(), symbol.clone());
+        });
+
         // if exists anywhere already, return error (no shadowing)
         for scope in self.scopes.iter().rev() {
             if scope.contains_key(&name) {
@@ -82,5 +97,9 @@ impl SymbolTable {
             }
         }
         None
+    }
+
+    pub fn resolve_from_history(&self, name: &str) -> Option<&Symbol> {
+        self.history.as_ref().and_then(|history| history.get(name))
     }
 }

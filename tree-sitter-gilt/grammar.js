@@ -13,7 +13,9 @@ module.exports = grammar({
   extras: ($) => [/\s/, $.comment],
 
   rules: {
-    source_file: ($) => repeat($._statement),
+    source_file: ($) => repeat($._top_level_item),
+
+    _top_level_item: ($) => choice($.function_definition),
 
     _statement: ($) =>
       choice(

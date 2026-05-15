@@ -1,3 +1,5 @@
+//# GLOBAL: autofn
+
 //$ CASE: Const unsigned addition
 //$ EXPECTED_SUCCESS
 //$ EXPECTED_TYPE: a => u32

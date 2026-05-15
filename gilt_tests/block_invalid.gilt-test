@@ -1,3 +1,5 @@
+//# GLOBAL: autofn
+
 //$ CASE: Expression statement in block returns void
 //$ EXPECTED_ERROR: VoidReturnedWhenValueExpected
 //$ EXPECTED_TYPE: a => void

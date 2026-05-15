@@ -1,3 +1,5 @@
+//# GLOBAL: autofn
+
 //$ CASE: Scopeless put
 //$ EXPECTED_ERROR: ScopelessPut
 put 1;

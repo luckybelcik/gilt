@@ -19,11 +19,14 @@ fn add_two(x: i32, y: i32) -> i32 {
 
 //$ CASE: Function not at top scope
 //$ EXPECTED_ERROR: FunctionNotAtTopScope
-{
-    fn add_two_2(z: i32, w: i32) -> i32 {
-        return z + w;
-    }
-};
+//$ EXPECTED_ERROR: NestedFunction
+fn void() {
+    {
+        fn add_two_2(z: i32, w: i32) -> i32 {
+            return z + w;
+        }
+    };
+}
 
 //$ ---
 

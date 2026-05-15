@@ -4,9 +4,11 @@ fn add_two(x: i32, y: i32) -> i32 {
     return x + y;
 }
 
-const x: i32 = 2;
-const y: u32 = 2;
-add_two(x, y);
+fn void() {
+    const x: i32 = 2;
+    const y: u32 = 2;
+    add_two(x, y);
+}
 
 //$ ---
 
@@ -16,5 +18,7 @@ fn add_two(x: i32, y: i32) -> i32 {
     return x + y;
 }
 
-add_two(1);
-add_two(1, 1, 1);
+fn void() {
+    add_two(1);
+    add_two(1, 1, 1);
+}

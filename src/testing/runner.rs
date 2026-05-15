@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use regex::Regex;
+use rustc_hash::FxHashSet;
 
 use crate::{
     ast::{lowerer::Lowerer, statement::Statement},
@@ -16,6 +17,7 @@ type TypedAST = Vec<Statement<GiltType>>;
 
 fn run_pipeline(
     source_code: &str,
+    save_symbol_history: bool,
 ) -> Result<
     (
         Result<(), Vec<Diagnostic>>,
@@ -47,7 +49,7 @@ fn run_pipeline(
         }
     };
 
-    let mut analyzer = SemanticAnalyzer::new();
+    let mut analyzer = SemanticAnalyzer::new(save_symbol_history);
     let (typed_ast, _) = analyzer.analyze(untyped_ast);
     Ok((
         maybe_diagnostics,
@@ -58,7 +60,7 @@ fn run_pipeline(
 }
 
 fn find_variable_type(symbol_table: &SymbolTable, var_name: &str) -> Option<GiltType> {
-    let symbol = symbol_table.resolve(var_name);
+    let symbol = symbol_table.resolve_from_history(var_name);
     symbol?.as_variable().map(|s| s.ty)
 }
 
@@ -67,13 +69,31 @@ impl Runner {
         let instant = Instant::now();
         let mut j = 0;
         for path in file_paths {
+            println!("Running tests in file {}", path);
             let content = std::fs::read_to_string(path)
                 .expect(&format!("Could not read test file: {}", path));
+
+            let mut global_tags: Vec<String> = vec![];
+
+            for line in content.lines() {
+                if line.trim().starts_with("//# GLOBAL:") {
+                    global_tags.push(
+                        line.trim()
+                            .trim_start_matches("//# GLOBAL:")
+                            .split(",")
+                            .map(|s| s.trim().to_string())
+                            .collect(),
+                    );
+                }
+            }
 
             let subtests = content.split("//$ ---");
 
             for (i, raw_subtest) in subtests.enumerate() {
+                println!("Subtest {}", i);
                 let (metadata, code) = self.split_metadata_and_code(raw_subtest);
+
+                let code = self.apply_tags(code, &metadata, &global_tags);
 
                 let test_id = if metadata.case.is_empty() {
                     format!("{}#{}", path, i + 1)
@@ -100,7 +120,7 @@ impl Runner {
         let metadata = self.parse_metadata(input);
         let code = input
             .lines()
-            .filter(|line| !line.trim().starts_with("//$"))
+            .filter(|line| !line.trim().starts_with("//$") && !line.trim().starts_with("//#"))
             .collect::<Vec<_>>()
             .join("\n");
         (metadata, code)
@@ -112,6 +132,7 @@ impl Runner {
             expectations: Vec::new(),
             expected_types: Vec::new(),
             expected_values: Vec::new(),
+            tags: Vec::new(),
         };
 
         let re = Regex::new(
@@ -124,6 +145,16 @@ impl Runner {
         for line in input.lines() {
             let trimmed = line.trim();
             if !trimmed.starts_with("//$") {
+                if trimmed.starts_with("//#") {
+                    metadata.tags.push(
+                        trimmed
+                            .trim_start_matches("//#")
+                            .split(",")
+                            .map(|s| s.trim().to_string())
+                            .collect(),
+                    );
+                }
+
                 continue;
             }
             let cmd = trimmed.trim_start_matches("//$").trim();
@@ -180,8 +211,39 @@ impl Runner {
         metadata
     }
 
+    fn apply_tags(
+        &self,
+        code: String,
+        subtest_meta: &SubtestMetadata,
+        global_tags: &[String],
+    ) -> String {
+        let mut modified_code = code.clone();
+
+        let tags: FxHashSet<String> = subtest_meta
+            .tags
+            .iter()
+            .cloned()
+            .chain(global_tags.iter().cloned())
+            .collect();
+
+        for tag in tags {
+            match tag.as_str() {
+                "autofn" => {
+                    modified_code = format!("fn autofn() {{\n{}\n}}", modified_code);
+                }
+                _ => {
+                    println!("Unknown tag: {}", tag);
+                }
+            }
+        }
+
+        modified_code
+    }
+
     fn execute_test(&self, test_id: String, metadata: SubtestMetadata, code: String) {
-        let (syntax_diagnostics, _, mut diagnostics, symbol_table) = run_pipeline(&code).unwrap();
+        let save_symbol_history = metadata.expected_types.len() > 0;
+        let (syntax_diagnostics, _, mut diagnostics, symbol_table) =
+            run_pipeline(&code, save_symbol_history).unwrap();
 
         let mut additional_diagnostics = syntax_diagnostics.map_or_else(|v| v, |_| vec![]);
 

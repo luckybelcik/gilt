@@ -1,3 +1,5 @@
+//# GLOBAL: autofn
+
 //$ CASE: If condition non-bool
 //$ EXPECTED_ERROR: TypeMismatch
 if 1 {

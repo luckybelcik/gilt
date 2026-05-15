@@ -5,4 +5,5 @@ pub struct SubtestMetadata {
     pub expectations: Vec<TestExpectation>,
     pub expected_types: Vec<(String, String)>,
     pub expected_values: Vec<(String, String)>,
+    pub tags: Vec<String>,
 }
