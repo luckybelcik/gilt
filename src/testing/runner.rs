@@ -145,7 +145,7 @@ impl Runner {
         for line in input.lines() {
             let trimmed = line.trim();
             if !trimmed.starts_with("//$") {
-                if trimmed.starts_with("//#") {
+                if trimmed.starts_with("//#") && !trimmed.contains("GLOBAL") {
                     metadata.tags.push(
                         trimmed
                             .trim_start_matches("//#")
