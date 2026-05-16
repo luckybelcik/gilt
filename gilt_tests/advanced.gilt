@@ -1,0 +1,9 @@
+//$ CASE: placeholder
+//$ EXPECTED_ERROR: NonExhaustiveFunctionBody
+fn main(x: i32, y: i32, op: u8) -> i32 {
+    if op == 0 {
+        return x + y;
+    } else if op == 1 {
+        return x - y;
+    };
+}

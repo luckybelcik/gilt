@@ -1,5 +1,6 @@
 use crate::semantics::types::GiltType;
 
+#[derive(PartialEq)]
 pub enum ExpectedType<'a> {
     // any includes void, unknown, etc
     Any,

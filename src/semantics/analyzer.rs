@@ -24,13 +24,14 @@ pub enum Terminator {
     None,
     Return(GiltType),
     Put(GiltType),
+    Break,
 }
 
 impl Terminator {
     pub fn return_type(&self) -> &GiltType {
         match self {
             Terminator::Return(ty) | Terminator::Put(ty) => ty,
-            Terminator::None => &GiltType::Void,
+            Terminator::None | Terminator::Break => &GiltType::Void,
         }
     }
 }
@@ -224,7 +225,7 @@ impl SemanticAnalyzer {
 
                 (
                     Statement::new(StatementType::Break, stmt.range, GiltType::Void),
-                    Terminator::Put(GiltType::Void),
+                    Terminator::Break,
                 )
             }
             StatementType::Return(maybe_expression) => {
@@ -311,16 +312,44 @@ impl SemanticAnalyzer {
                 // we do this so that put statements dont work in functions without a block scope
                 // this is necessary because checking block expressions implicity introduces a block scope
                 self.block_depth -= 1;
-                let (body_typed, term) = self.check_expression(body, &expected_type);
+                let (body_typed, body_term) = self.check_expression(body, &expected_type);
                 let type_ = body_typed.metadata.clone();
                 self.block_depth += 1;
 
-                if let Some(return_type) = &maybe_return_type {
-                    let return_type_gilt = GiltType::from_string(return_type);
-                    if type_ != return_type_gilt {
+                if let Some(return_type_text) = &maybe_return_type {
+                    let return_type = GiltType::from_string(return_type_text);
+
+                    if return_type != GiltType::Void {
+                        if !matches!(body_term, Terminator::Return(_) | Terminator::Put(_)) {
+                            self.report_error(
+                                DiagnosticKind::NonExhaustiveFunctionBody {
+                                    expected: return_type.clone(),
+                                },
+                                body_typed.range,
+                                line!(),
+                            );
+
+                            return (
+                                Statement::new(
+                                    StatementType::FuncDef {
+                                        is_public,
+                                        name,
+                                        parameters,
+                                        body: body_typed.boxed(),
+                                        return_type: maybe_return_type,
+                                    },
+                                    stmt.range,
+                                    GiltType::Unknown,
+                                ),
+                                Terminator::None,
+                            );
+                        }
+                    }
+
+                    if type_ != return_type {
                         self.report_error(
                             DiagnosticKind::TypeMismatch {
-                                expected: return_type_gilt,
+                                expected: return_type,
                                 found: type_,
                             },
                             stmt.range,
@@ -344,7 +373,7 @@ impl SemanticAnalyzer {
                         stmt.range,
                         type_,
                     ),
-                    term,
+                    body_term,
                 )
             }
         }
@@ -467,6 +496,10 @@ impl SemanticAnalyzer {
                             block_type = GiltType::Unknown;
                         }
                         propagated_term = Terminator::Return(ty.clone());
+                    }
+                    Terminator::Break => {
+                        block_type = GiltType::Void;
+                        propagated_term = Terminator::Break;
                     }
                     _ => {
                         block_type = GiltType::Void;
@@ -655,24 +688,13 @@ impl SemanticAnalyzer {
                 consequence,
                 alternative,
             } => {
-                // we can ignore the term here because it'd only pop up with a complicated condition, which we report an error for anyway
                 let (cond_typed, _) = self.check_expression(condition, &ExpectedType::AnyValue);
 
-                match &cond_typed.expression_type {
-                    ExpressionType::Block(_)
-                    | ExpressionType::If {
-                        condition: _,
-                        consequence: _,
-                        alternative: _,
-                    } => {
-                        self.report_error(
-                            DiagnosticKind::ComplicatedIfCondition,
-                            expr.range,
-                            line!(),
-                        );
-                    }
-
-                    _ => {}
+                if matches!(
+                    cond_typed.expression_type,
+                    ExpressionType::Block(_) | ExpressionType::If { .. }
+                ) {
+                    self.report_error(DiagnosticKind::ComplicatedIfCondition, expr.range, line!());
                 }
 
                 if cond_typed.metadata != GiltType::Bool {
@@ -686,11 +708,15 @@ impl SemanticAnalyzer {
                     );
                 }
 
+                let is_expression = expected_type.nonvoid();
+
                 let (consequence_typed, consequence_term) =
                     self.check_expression(consequence, expected_type);
                 let consequence_type = consequence_typed.metadata.clone();
 
-                let (alt_typed, alt_term) = if let Some(alt) = alternative {
+                let alt_is_none = alternative.is_none();
+
+                let (alt_typed_opt, alt_term_opt) = if let Some(alt) = alternative {
                     let (alt_typed, alt_term) = self.check_expression(alt, expected_type);
 
                     if consequence_type != alt_typed.metadata {
@@ -708,7 +734,7 @@ impl SemanticAnalyzer {
                     (None, None)
                 };
 
-                if expected_type.nonvoid() && alt_typed.is_none() {
+                if is_expression && alt_typed_opt.is_none() {
                     self.report_error(
                         DiagnosticKind::NonExhaustiveIfExpression,
                         expr.range,
@@ -716,22 +742,65 @@ impl SemanticAnalyzer {
                     );
                 }
 
-                let mut propagated_term = Terminator::None;
+                let alt_term = alt_term_opt.unwrap_or(Terminator::None);
+                let propagated_term;
 
-                if let Some(alt_t) = &alt_term {
-                    if let (Terminator::Return(t1), Terminator::Return(t2)) =
-                        (&consequence_term, alt_t)
-                    {
-                        if t1 == t2 {
-                            propagated_term = Terminator::Return(t1.clone());
-                        } else {
+                if is_expression {
+                    for term in [&consequence_term, &alt_term] {
+                        if matches!(term, Terminator::Break) {
                             self.report_error(
-                                DiagnosticKind::MixedTerminators,
+                                DiagnosticKind::BreakInsideExpressionContext,
                                 expr.range,
                                 line!(),
                             );
                         }
                     }
+
+                    propagated_term = match (&consequence_term, &alt_term) {
+                        (Terminator::Return(t1), Terminator::Return(t2)) => {
+                            if t1 != t2 {
+                                self.report_error(
+                                    DiagnosticKind::MultipleTypesReturned,
+                                    expr.range,
+                                    line!(),
+                                );
+                            }
+                            Terminator::Return(t1.clone())
+                        }
+                        (Terminator::Return(t), _) | (_, Terminator::Return(t)) => {
+                            Terminator::Return(t.clone())
+                        }
+                        _ => Terminator::None,
+                    };
+                } else {
+                    propagated_term = if alt_is_none {
+                        Terminator::None
+                    } else {
+                        match (&consequence_term, &alt_term) {
+                            (t1, t2) if t1 == t2 => t1.clone(),
+
+                            (Terminator::Put(_), Terminator::Break)
+                            | (Terminator::Break, Terminator::Put(_)) => {
+                                self.report_error(
+                                    DiagnosticKind::MixedTerminators,
+                                    expr.range,
+                                    line!(),
+                                );
+                                Terminator::None
+                            }
+
+                            (Terminator::Return(t1), Terminator::Return(_)) => {
+                                self.report_error(
+                                    DiagnosticKind::MultipleTypesReturned,
+                                    expr.range,
+                                    line!(),
+                                );
+                                Terminator::Return(t1.clone())
+                            }
+
+                            _ => Terminator::None,
+                        }
+                    };
                 }
 
                 return (
@@ -739,12 +808,12 @@ impl SemanticAnalyzer {
                         ExpressionType::If {
                             condition: cond_typed.boxed(),
                             consequence: consequence_typed.boxed(),
-                            alternative: alt_typed.map(|x| x.boxed()),
+                            alternative: alt_typed_opt.map(|x| x.boxed()),
                         },
                         expr.range,
                         consequence_type,
                     ),
-                    propagated_term, // Pass the bubbled-up terminator!
+                    propagated_term,
                 );
             }
             ExpressionType::FuncCall { name, arguments } => {

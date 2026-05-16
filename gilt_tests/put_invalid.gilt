@@ -7,7 +7,8 @@ put 1;
 //$ ---
 
 //$ CASE: Multiple terminator types in one block
-//$ EXPECTED_ERROR x 2: VoidReturnedWhenValueExpected
+//$ EXPECTED_ERROR: VoidReturnedWhenValueExpected
+//$ EXPECTED_ERROR: BreakInsideExpressionContext
 //$ EXPECTED_ERROR: TypeMismatch
 const a := {
     if true {

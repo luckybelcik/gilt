@@ -34,6 +34,8 @@ pub enum DiagnosticKind {
     FunctionNotAtTopScope,
     IncorrectArgumentCount { expected: usize, found: usize },
     MismatchedTerminatorsInBinaryExpression,
+    NonExhaustiveFunctionBody { expected: GiltType },
+    BreakInsideExpressionContext,
 
     // warnings
     UnreachableCode,
@@ -73,6 +75,8 @@ impl DiagnosticKind {
             Self::MismatchedTerminatorsInBinaryExpression => {
                 "MismatchedTerminatorsInBinaryExpression"
             }
+            Self::NonExhaustiveFunctionBody { .. } => "NonExhaustiveFunctionBody",
+            Self::BreakInsideExpressionContext => "BreakInsideExpressionContext",
 
             Self::UnreachableCode => "UnreachableCode",
         }
