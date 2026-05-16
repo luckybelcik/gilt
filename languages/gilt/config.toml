@@ -1,0 +1,6 @@
+name = "Gilt"
+type = "program"
+file_types = ["gilt"]
+injection_regex = "gilt"
+
+line_comments = ["// ", "//$ ", "//# "]
