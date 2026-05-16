@@ -7,21 +7,14 @@ put 1;
 //$ ---
 
 //$ CASE: Multiple terminator types in one block
-//$ EXPECTED_ERROR x 2: MixedTerminators
-//$ EXPECTED_ERROR: UnreachableCode
+//$ EXPECTED_ERROR x 2: VoidReturnedWhenValueExpected
+//$ EXPECTED_ERROR: TypeMismatch
 const a := {
-    put 1;
-    break;
-};
-
-//$ ---
-
-//$ CASE: Multiple return types in one block
-//$ EXPECTED_ERROR x 2: MultipleTypesReturned
-//$ EXPECTED_ERROR: UnreachableCode
-const a := {
-    put 1;
-    put true;
+    if true {
+        put 1;
+    } else {
+        break;
+    };
 };
 
 //$ ---

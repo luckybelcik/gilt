@@ -6,14 +6,18 @@ use rustc_hash::FxHashSet;
 use crate::{
     ast::{lowerer::Lowerer, statement::Statement},
     error_handling::diagnostic::Diagnostic,
-    semantics::{analyzer::SemanticAnalyzer, symbol_table::SymbolTable, types::GiltType},
+    semantics::{
+        analyzer::{SemanticAnalyzer, Terminator},
+        symbol_table::SymbolTable,
+        types::GiltType,
+    },
     syntax_guard::validate_syntax,
     testing::{subtest_meta::SubtestMetadata, test_expectation::TestExpectation},
 };
 
 pub struct Runner {}
 
-type TypedAST = Vec<Statement<GiltType>>;
+type TypedAST = Vec<(Statement<GiltType>, Terminator)>;
 
 fn run_pipeline(
     source_code: &str,

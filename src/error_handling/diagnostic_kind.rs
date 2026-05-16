@@ -33,6 +33,7 @@ pub enum DiagnosticKind {
     NestedFunction,
     FunctionNotAtTopScope,
     IncorrectArgumentCount { expected: usize, found: usize },
+    MismatchedTerminatorsInBinaryExpression,
 
     // warnings
     UnreachableCode,
@@ -69,6 +70,9 @@ impl DiagnosticKind {
             Self::NestedFunction => "NestedFunction",
             Self::FunctionNotAtTopScope => "FunctionNotAtTopScope",
             Self::IncorrectArgumentCount { .. } => "IncorrectArgumentCount",
+            Self::MismatchedTerminatorsInBinaryExpression => {
+                "MismatchedTerminatorsInBinaryExpression"
+            }
 
             Self::UnreachableCode => "UnreachableCode",
         }

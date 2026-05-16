@@ -1,0 +1,31 @@
+//$ CASE: Good things happening
+//$ EXPECTED_SUCCESS
+fn is_enough_kittens(amount: u32) -> bool {
+    // let's spawn kittens guys
+
+    if amount < 10 {
+        // not enough... just quit...
+        return false;
+    } else if amount < 50 {
+        // very well!!!
+        return true;
+    } else if amount > 100 {
+        // THAT'S TOO MUCH THAT'S TOO MUCH!!!!
+        return false;
+    } else {
+        // idk what else
+        return false;
+    };
+}
+
+fn main() {
+    const kitten_count := 80;
+
+    const result := is_enough_kittens(kitten_count);
+
+    if result {
+        // yay! enough kittens!
+    } else {
+        // what the hell is wrong with you.
+    };
+}

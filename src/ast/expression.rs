@@ -61,4 +61,8 @@ impl<M> Expression<M> {
     pub fn expression_type(&self) -> &ExpressionType<M> {
         &self.expression_type
     }
+
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
 }
