@@ -25,7 +25,7 @@ impl<'a> Lowerer<'a> {
         let mut cursor = root_node.walk();
         for child in root_node.children(&mut cursor) {
             println!("Child kind: {}", child.kind());
-            if !child.is_named() {
+            if !child.is_named() || child.kind().contains("comment") {
                 continue;
             }
 

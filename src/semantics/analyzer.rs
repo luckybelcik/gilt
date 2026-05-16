@@ -329,6 +329,8 @@ impl SemanticAnalyzer {
                                 line!(),
                             );
 
+                            self.func_depth -= 1;
+
                             return (
                                 Statement::new(
                                     StatementType::FuncDef {

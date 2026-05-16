@@ -1,4 +1,4 @@
-//$ CASE: placeholder
+//$ CASE: Non exhaustive if statement in function
 //$ EXPECTED_ERROR: NonExhaustiveFunctionBody
 fn main(x: i32, y: i32, op: u8) -> i32 {
     if op == 0 {
@@ -6,4 +6,35 @@ fn main(x: i32, y: i32, op: u8) -> i32 {
     } else if op == 1 {
         return x - y;
     };
+}
+
+// this is relevant, trust me
+fn boo() {}
+
+//$ ---
+
+//$ CASE: Exhaustive if statement in function
+//$ EXPECTED_SUCCESS
+fn main_good(x: i32, y: i32, op: u8) -> i32 {
+    if op == 0 {
+        return x + y;
+    } else if op == 1 {
+        return x - y;
+    };
+
+    return -1;
+}
+
+//$ ---
+
+//$ CASE: Two functions with same argument names
+//$ EXPECTED_SUCCESS
+fn one(x: i32, y: i32) -> i32 {
+    const c := x + y;
+    return c;
+}
+
+fn one_good(x: i32, y: i32) -> i32 {
+    const c := x + y;
+    return c;
 }
