@@ -565,144 +565,90 @@ impl SemanticAnalyzer {
                 }
             }
             ExpressionType::NegativeInteger(int) => {
-                if let ExpectedType::Specific(expected) = expected_type {
-                    if expected.signed_int_fits(int).unwrap_or_else(|err| {
+                let resolved_type = if let ExpectedType::Specific(expected) = expected_type {
+                    let fits = expected.signed_int_fits(int).unwrap_or_else(|err| {
                         self.report_error(err, expr.range, line!());
                         false
-                    }) {
-                        return (
-                            Expression::new(
-                                ExpressionType::NegativeInteger(int),
-                                expr.range,
-                                **expected,
-                            ),
-                            Terminator::None,
-                        );
+                    });
+
+                    if fits {
+                        **expected
                     } else {
                         self.report_error(
                             DiagnosticKind::NumberOutOfRangeForType(**expected),
                             expr.range,
                             line!(),
                         );
-                        return (
-                            Expression::new(
-                                ExpressionType::NegativeInteger(int),
-                                expr.range,
-                                GiltType::Unknown,
-                            ),
-                            Terminator::None,
-                        );
+                        GiltType::Unknown
                     }
                 } else {
-                    return (
-                        Expression::new(
-                            ExpressionType::NegativeInteger(int),
-                            expr.range,
-                            GiltType::I32,
-                        ),
-                        Terminator::None,
-                    );
-                }
+                    GiltType::I32
+                };
+
+                return (
+                    Expression::new(
+                        ExpressionType::NegativeInteger(int),
+                        expr.range,
+                        resolved_type,
+                    ),
+                    Terminator::None,
+                );
             }
             ExpressionType::PositiveInteger(int) => {
-                if let ExpectedType::Specific(expected) = expected_type {
-                    if expected.is_unsigned_integer() {
-                        if expected.unsigned_int_fits(int).unwrap_or_else(|err| {
-                            self.report_error(err, expr.range, line!());
-                            false
-                        }) {
-                            return (
-                                Expression::new(
-                                    ExpressionType::PositiveInteger(int),
-                                    expr.range,
-                                    **expected,
-                                ),
-                                Terminator::None,
-                            );
-                        } else {
-                            self.report_error(
-                                DiagnosticKind::NumberOutOfRangeForType(**expected),
-                                expr.range,
-                                line!(),
-                            );
-                            return (
-                                Expression::new(
-                                    ExpressionType::PositiveInteger(int),
-                                    expr.range,
-                                    GiltType::Unknown,
-                                ),
-                                Terminator::None,
-                            );
-                        }
+                let resolved_type = if let ExpectedType::Specific(expected) = expected_type {
+                    let fits = if expected.is_unsigned_integer() {
+                        expected.unsigned_int_fits(int)
                     } else {
-                        if expected.signed_int_fits(int as i128).unwrap_or_else(|err| {
-                            self.report_error(err, expr.range, line!());
-                            false
-                        }) {
-                            return (
-                                Expression::new(
-                                    ExpressionType::PositiveInteger(int),
-                                    expr.range,
-                                    **expected,
-                                ),
-                                Terminator::None,
-                            );
-                        } else {
-                            self.report_error(
-                                DiagnosticKind::NumberOutOfRangeForType(**expected),
-                                expr.range,
-                                line!(),
-                            );
-                            return (
-                                Expression::new(
-                                    ExpressionType::PositiveInteger(int),
-                                    expr.range,
-                                    GiltType::Unknown,
-                                ),
-                                Terminator::None,
-                            );
-                        }
+                        expected.signed_int_fits(int as i128)
+                    }
+                    .unwrap_or_else(|err| {
+                        self.report_error(err, expr.range, line!());
+                        false
+                    });
+
+                    if fits {
+                        **expected
+                    } else {
+                        self.report_error(
+                            DiagnosticKind::NumberOutOfRangeForType(**expected),
+                            expr.range,
+                            line!(),
+                        );
+                        GiltType::Unknown
                     }
                 } else {
-                    return (
-                        Expression::new(
-                            ExpressionType::PositiveInteger(int),
-                            expr.range,
-                            GiltType::U32,
-                        ),
-                        Terminator::None,
-                    );
-                }
+                    GiltType::U32
+                };
+
+                return (
+                    Expression::new(
+                        ExpressionType::PositiveInteger(int),
+                        expr.range,
+                        resolved_type,
+                    ),
+                    Terminator::None,
+                );
             }
             ExpressionType::Float(num) => {
-                if let ExpectedType::Specific(expected) = expected_type {
+                let resolved_type = if let ExpectedType::Specific(expected) = expected_type {
                     if expected.is_float() {
-                        return (
-                            Expression::new(ExpressionType::Float(num), expr.range, **expected),
-                            Terminator::None,
-                        );
+                        **expected
                     } else {
-                        // internal error because this shouldn't happen
                         self.report_internal_error(
                             DiagnosticKind::NonFloatNumberInFloatExpression(**expected),
                             expr.range,
                             line!(),
                         );
-                        return (
-                            Expression::new(
-                                ExpressionType::Float(num),
-                                expr.range,
-                                GiltType::Unknown,
-                            ),
-                            Terminator::None,
-                        );
+                        GiltType::Unknown
                     }
                 } else {
-                    return (
-                        Expression::new(ExpressionType::Float(num), expr.range, GiltType::F32),
-                        Terminator::None,
-                    );
-                }
+                    GiltType::F32
+                };
+
+                return (
+                    Expression::new(ExpressionType::Float(num), expr.range, resolved_type),
+                    Terminator::None,
+                );
             }
             ExpressionType::If {
                 condition,
