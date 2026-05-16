@@ -1,21 +1,20 @@
 fn main() {
-    let src_dir = std::path::Path::new("src");
+    let mut config = cc::Build::new();
+    config.compiler("clang");
+    config.include("src");
+    config.file("src/parser.c");
 
-    let mut c_config = cc::Build::new();
-    c_config.std("c11").include(src_dir);
-
-    #[cfg(target_env = "msvc")]
-    c_config.flag("-utf-8");
-
-    let parser_path = src_dir.join("parser.c");
-    c_config.file(&parser_path);
-    println!("cargo:rerun-if-changed={}", parser_path.to_str().unwrap());
-
-    let scanner_path = src_dir.join("scanner.c");
-    if scanner_path.exists() {
-        c_config.file(&scanner_path);
-        println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
+    if std::env::var("TARGET").unwrap_or_default() == "wasm32-wasip2" {
+        if let Ok(wasi_sdk_path) = std::env::var("WASI_SDK_PATH") {
+            let sysroot = format!("{}/share/wasi-sysroot", wasi_sdk_path);
+            config.flag(&format!("--sysroot={}", sysroot));
+        }
     }
 
-    c_config.compile("tree-sitter-gilt");
+    if let Ok(file) = std::fs::File::open("src/scanner.c") {
+        drop(file);
+        config.file("src/scanner.c");
+    }
+
+    config.compile("tree-sitter-gilt");
 }
